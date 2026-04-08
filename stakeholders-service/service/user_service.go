@@ -18,6 +18,11 @@ type UserService struct {
 }
 
 func (service *UserService) Register(request dto.RegisterRequest) error {
+
+	if request.Role == "admin" {
+		return errors.New("Cannot register as admin")
+	}
+
 	_, err := service.Repo.FindByUsername(request.Username)
 	if err != nil {
 		return errors.New("Username already exists")
@@ -71,4 +76,21 @@ func (service *UserService) Login(request dto.LoginRequest) (string, error) {
 	}
 
 	return tokenString, nil
+}
+
+func (s *UserService) GetAllUsers() ([]model.User, error) {
+	users, err := s.Repo.GetAllUsers()
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range users {
+		users[i].Password = ""
+	}
+
+	return users, nil
+}
+
+func (s *UserService) BlockUser(userID string) error {
+	return s.Repo.BlockUser(userID)
 }

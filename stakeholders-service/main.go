@@ -40,6 +40,9 @@ func startServer(userHandler *handler.UserHandler, profileHandler *handler.Profi
 	router.HandleFunc("/register", userHandler.Register).Methods("POST")
 	router.HandleFunc("/login", userHandler.Login).Methods("POST")
 
+	router.Handle("/admin/users", middleware.AuthMiddleware(middleware.AdminOnly(http.HandlerFunc(userHandler.GetAllUsers)))).Methods("GET")
+	router.Handle("/admin/users/{id}/block", middleware.AuthMiddleware(middleware.AdminOnly(http.HandlerFunc(userHandler.BlockUser)))).Methods("PUT")
+
 	protected := router.PathPrefix("/profile").Subrouter()
 	protected.Use(middleware.AuthMiddleware)
 	protected.HandleFunc("", profileHandler.GetProfile).Methods("GET")
