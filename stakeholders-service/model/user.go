@@ -19,9 +19,17 @@ type User struct {
 	Password string    `json:"-" gorm:"type:string;not null"`
 	Email    string    `json:"email" gorm:"type:string;not null;uniqueIndex"`
 	Role     Role      `json:"role,omitempty" gorm:"type:string;default: null"`
+	Profile  *Profile  `json:"profile,omitempty" gorm:"foreignKey:UserID"`
 }
 
 func (user *User) BeforeCreate(scope *gorm.DB) error {
 	user.ID = uuid.New()
 	return nil
+}
+
+func (user *User) AfterCreate(db *gorm.DB) error {
+    profile := Profile{
+        UserID: user.ID,
+    }
+    return db.Create(&profile).Error
 }
