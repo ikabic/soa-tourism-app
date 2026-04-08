@@ -14,11 +14,12 @@ const (
 )
 
 type User struct {
-	ID       uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
-	Username string    `json:"username" gorm:"type:string;not null;uniqueIndex"`
-	Password string    `json:"-" gorm:"type:string;not null"`
-	Email    string    `json:"email" gorm:"type:string;not null;uniqueIndex"`
-	Role     Role      `json:"role,omitempty" gorm:"type:string;default: null"`
+	ID        uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	Username  string    `json:"username" gorm:"type:string;not null;uniqueIndex"`
+	Password  string    `json:"-" gorm:"type:string;not null"`
+	Email     string    `json:"email" gorm:"type:string;not null;uniqueIndex"`
+	Role      Role      `json:"role,omitempty" gorm:"type:string;default: null"`
+	IsBlocked bool      `json:"isBlocked" gorm:"default:false"`
 }
 
 func (user *User) BeforeCreate(scope *gorm.DB) error {

@@ -24,3 +24,13 @@ func (repo *UserRepository) FindByEmail(email string) (*model.User, error) {
 	err := repo.DB.Where("email = ?", email).First(&user).Error
 	return &user, err
 }
+
+func (r *UserRepository) GetAllUsers() ([]model.User, error) {
+    var users []model.User
+    err := r.DB.Find(&users).Error
+    return users, err
+}
+
+func (r *UserRepository) BlockUser(userID string) error {
+    return r.DB.Model(&model.User{}).Where("id = ?", userID).Update("is_blocked", true).Error
+}
