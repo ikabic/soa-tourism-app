@@ -72,3 +72,19 @@ func (service *UserService) Login(request dto.LoginRequest) (string, error) {
     return tokenString, nil
 }
 
+func (s *UserService) GetAllUsers() ([]model.User, error) {
+    users, err := s.Repo.GetAllUsers()
+    if err != nil {
+        return nil, err
+    }
+
+    for i := range users {
+        users[i].Password = ""
+    }
+
+    return users, nil
+}
+
+func (s *UserService) BlockUser(userID string) error {
+    return s.Repo.BlockUser(userID)
+}
