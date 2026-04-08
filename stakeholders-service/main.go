@@ -8,9 +8,15 @@ import (
 
 	"github.com/joho/godotenv"
 
+	"net/http"
+
+	"github.com/gorilla/mux"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"stakeholders-service.xws.com/handler"
 	"stakeholders-service.xws.com/model"
+	"stakeholders-service.xws.com/repo"
+	"stakeholders-service.xws.com/service"
 )
 
 func initDatabase() *gorm.DB {
@@ -27,9 +33,26 @@ func initDatabase() *gorm.DB {
 	return database
 }
 
+func startServer(handler *handler.UserHandler) {
+	router := mux.NewRouter().StrictSlash(true)
+
+	router.HandleFunc("/register", handler.Register).Methods("POST")
+	router.HandleFunc("/login", handler.Login).Methods("POST")
+
+	router.PathPrefix("/").Handler(http.FileServer(http.Dir("./static")))
+	println("Server starting")
+	log.Fatal(http.ListenAndServe(":8080", router))
+}
+
 func main() {
 	database := initDatabase()
 	if database == nil {
 		log.Fatal("Failed to connect to database")
 	}
+
+	repo := &repo.UserRepository{DB: database}
+	service := &service.UserService{Repo: repo}
+	handler := &handler.UserHandler{Service: service}
+
+	startServer(handler)
 }
