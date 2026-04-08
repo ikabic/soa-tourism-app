@@ -14,6 +14,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"stakeholders-service.xws.com/handler"
+	"stakeholders-service.xws.com/middleware"
 	"stakeholders-service.xws.com/model"
 	"stakeholders-service.xws.com/repo"
 	"stakeholders-service.xws.com/service"
@@ -33,14 +34,19 @@ func initDatabase() *gorm.DB {
 	return database
 }
 
-func startServer(handler *handler.UserHandler) {
+func startServer(userHandler *handler.UserHandler, profileHandler *handler.ProfileHandler) {
 	router := mux.NewRouter().StrictSlash(true)
 
-	router.HandleFunc("/register", handler.Register).Methods("POST")
-	router.HandleFunc("/login", handler.Login).Methods("POST")
+	router.HandleFunc("/register", userHandler.Register).Methods("POST")
+	router.HandleFunc("/login", userHandler.Login).Methods("POST")
+
+	protected := router.PathPrefix("/profile").Subrouter()
+	protected.Use(middleware.AuthMiddleware)
+	protected.HandleFunc("", profileHandler.GetProfile).Methods("GET")
+	protected.HandleFunc("", profileHandler.UpdateProfile).Methods("PUT")
 
 	router.PathPrefix("/").Handler(http.FileServer(http.Dir("./static")))
-	println("Server starting")
+	println("Server starting...")
 	log.Fatal(http.ListenAndServe(":8080", router))
 }
 
@@ -50,9 +56,14 @@ func main() {
 		log.Fatal("Failed to connect to database")
 	}
 
-	repo := &repo.UserRepository{DB: database}
-	service := &service.UserService{Repo: repo}
-	handler := &handler.UserHandler{Service: service}
+	userRepo := &repo.UserRepository{DB: database}
+	profileRepo := &repo.ProfileRepository{DB: database}
 
-	startServer(handler)
+	userService := &service.UserService{Repo: userRepo}
+	profileService := &service.ProfileService{Repo: profileRepo}
+
+	userHandler := &handler.UserHandler{Service: userService}
+	profileHandler := &handler.ProfileHandler{Service: profileService}
+
+	startServer(userHandler, profileHandler)
 }
