@@ -14,6 +14,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"stakeholders-service.xws.com/handler"
+	"stakeholders-service.xws.com/middleware"
 	"stakeholders-service.xws.com/model"
 	"stakeholders-service.xws.com/repo"
 	"stakeholders-service.xws.com/service"
@@ -38,6 +39,8 @@ func startServer(handler *handler.UserHandler) {
 
 	router.HandleFunc("/register", handler.Register).Methods("POST")
 	router.HandleFunc("/login", handler.Login).Methods("POST")
+	router.Handle("/admin/users", middleware.AuthMiddleware(middleware.AdminOnly(http.HandlerFunc(handler.GetAllUsers)))).Methods("GET")
+	router.Handle("/admin/users/{id}/block", middleware.AuthMiddleware(middleware.AdminOnly(http.HandlerFunc(handler.BlockUser)))).Methods("PUT")
 
 	router.PathPrefix("/").Handler(http.FileServer(http.Dir("./static")))
 	println("Server starting")
