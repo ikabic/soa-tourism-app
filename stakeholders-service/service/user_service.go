@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"stakeholders-service.xws.com/dto"
 	"stakeholders-service.xws.com/model"
@@ -23,13 +24,13 @@ func (service *UserService) Register(request dto.RegisterRequest) error {
 		return errors.New("Cannot register as admin")
 	}
 
-	_, err := service.Repo.FindByUsername(request.Username)
-	if err != nil {
+	existing := service.Repo.FindByUsername(request.Username)
+	if existing.ID != uuid.Nil {
 		return errors.New("Username already exists")
 	}
 
-	_, err = service.Repo.FindByEmail(request.Email)
-	if err != nil {
+	existing = service.Repo.FindByEmail(request.Email)
+	if existing.ID != uuid.Nil {
 		return errors.New("Email already exists")
 	}
 
@@ -50,12 +51,12 @@ func (service *UserService) Register(request dto.RegisterRequest) error {
 }
 
 func (service *UserService) Login(request dto.LoginRequest) (string, error) {
-	user, err := service.Repo.FindByUsername(request.Username)
-	if err != nil {
+	user := service.Repo.FindByUsername(request.Username)
+	if user.ID == uuid.Nil {
 		return "", errors.New("Invalid credentials")
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(request.Password))
+	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(request.Password))
 	if err != nil {
 		return "", errors.New("Invalid credentials")
 	}
