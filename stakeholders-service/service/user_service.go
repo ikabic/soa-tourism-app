@@ -3,13 +3,14 @@ package service
 import (
 	"errors"
 
+	"os"
+	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 	"stakeholders-service.xws.com/dto"
 	"stakeholders-service.xws.com/model"
 	"stakeholders-service.xws.com/repo"
-	"os"
-    "time"
-    "github.com/golang-jwt/jwt/v5"
 )
 
 type UserService struct {
@@ -18,12 +19,12 @@ type UserService struct {
 
 func (service *UserService) Register(request dto.RegisterRequest) error {
 	_, err := service.Repo.FindByUsername(request.Username)
-	if err == nil {
+	if err != nil {
 		return errors.New("Username already exists")
 	}
 
 	_, err = service.Repo.FindByEmail(request.Email)
-	if err == nil {
+	if err != nil {
 		return errors.New("Email already exists")
 	}
 
@@ -44,31 +45,30 @@ func (service *UserService) Register(request dto.RegisterRequest) error {
 }
 
 func (service *UserService) Login(request dto.LoginRequest) (string, error) {
-    user, err := service.Repo.FindByUsername(request.Username)
-    if err != nil {
-        return "", errors.New("Invalid credentials")
-    }
+	user, err := service.Repo.FindByUsername(request.Username)
+	if err != nil {
+		return "", errors.New("Invalid credentials")
+	}
 
-    err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(request.Password))
-    if err != nil {
-        return "", errors.New("Invalid credentials")
-    }
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(request.Password))
+	if err != nil {
+		return "", errors.New("Invalid credentials")
+	}
 
-    claims := jwt.MapClaims{
-        "userId": user.ID.String(),
-        "role":   user.Role,
-        "exp":    time.Now().Add(time.Hour * 24).Unix(), 
-    }
+	claims := jwt.MapClaims{
+		"userId": user.ID.String(),
+		"role":   user.Role,
+		"exp":    time.Now().Add(time.Hour * 24).Unix(),
+	}
 
-    token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-    secret := os.Getenv("JWT_SECRET")
+	secret := os.Getenv("JWT_SECRET")
 
-    tokenString, err := token.SignedString([]byte(secret))
-    if err != nil {
-        return "", err
-    }
+	tokenString, err := token.SignedString([]byte(secret))
+	if err != nil {
+		return "", err
+	}
 
-    return tokenString, nil
+	return tokenString, nil
 }
-

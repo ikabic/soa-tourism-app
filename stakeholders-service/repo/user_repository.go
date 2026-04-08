@@ -15,12 +15,12 @@ func (repo *UserRepository) Create(user *model.User) error {
 
 func (repo *UserRepository) FindByUsername(username string) (*model.User, error) {
 	var user model.User
-	err := repo.DB.Where("username = ?", username).First(&user).Error
+	err := repo.DB.Where("username = ?", username).Limit(1).Find(&user).Error
 	return &user, err
 }
 
 func (repo *UserRepository) FindByEmail(email string) (*model.User, error) {
 	var user model.User
-	err := repo.DB.Where("email = ?", email).First(&user).Error
+	err := repo.DB.Where("email = ?", email).Limit(1).Find(&user).Error
 	return &user, err
 }
