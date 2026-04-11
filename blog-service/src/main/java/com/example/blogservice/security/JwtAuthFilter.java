@@ -71,7 +71,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-        if (!"POST".equalsIgnoreCase(request.getMethod())) {
+        String method = request.getMethod();
+        if (!"POST".equalsIgnoreCase(method) && !"DELETE".equalsIgnoreCase(method)) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -99,17 +100,19 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 response.sendError(HttpStatus.UNAUTHORIZED.value(), "Token does not contain user identity");
                 return;
             }
-
             request.setAttribute("userId", userId);
             request.setAttribute("role", getClaimAsString(claims, "role"));
-            filterChain.doFilter(request, response);
         } catch (Exception exception) {
             response.sendError(HttpStatus.UNAUTHORIZED.value(), "Invalid token");
+            return;
         }
+
+        filterChain.doFilter(request, response);
     }
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return !request.getRequestURI().startsWith("/blogs");
+        String uri = request.getRequestURI();
+        return !uri.startsWith("/blogs") || uri.startsWith("/blogs/auth/");
     }
 }

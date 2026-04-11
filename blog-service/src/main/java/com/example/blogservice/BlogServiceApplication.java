@@ -17,7 +17,7 @@ public class BlogServiceApplication {
     public FilterRegistrationBean<JwtAuthFilter> jwtAuthFilter() {
         FilterRegistrationBean<JwtAuthFilter> registrationBean = new FilterRegistrationBean<>();
         registrationBean.setFilter(new JwtAuthFilter());
-        registrationBean.addUrlPatterns("/blogs", "/blogs/*");
+        registrationBean.addUrlPatterns("/*");
         registrationBean.setOrder(1);
         return registrationBean;
     }
