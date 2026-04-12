@@ -1,0 +1,35 @@
+services:
+  app:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    networks:
+      - servers
+    ports:
+      - "8081:8081"
+    env_file:
+      - .env
+    depends_on:
+      - database
+
+  database:
+    image: postgres:16-alpine
+    restart: always
+    networks:
+      - servers
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5434:5432"
+    volumes:
+      - blog_pg_data:/var/lib/postgresql/data
+
+volumes:
+  blog_pg_data:
+
+networks:
+  servers:
+    name: servers
+    driver: bridge

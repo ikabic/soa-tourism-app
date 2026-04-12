@@ -1,0 +1,90 @@
+services:
+  stakeholders-app:
+    build:
+      context: ./stakeholders-service
+      dockerfile: Dockerfile
+    container_name: stakeholders-app
+    networks:
+      - servers
+    ports:
+      - "8080:8080"
+    environment:
+      DB_HOST: stakeholders-db
+      DB_PORT: 5432
+      DB_USER: ${STAKEHOLDERS_DB_USER:-postgres}
+      DB_PASSWORD: ${STAKEHOLDERS_DB_PASSWORD:-postgres}
+      DB_NAME: ${STAKEHOLDERS_DB_NAME:-stakeholders}
+      DB_SSLMODE: disable
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      stakeholders-db:
+        condition: service_healthy
+
+  stakeholders-db:
+    container_name: stakeholders-db
+    image: postgres:16-alpine
+    restart: always
+    networks:
+      - servers
+    environment:
+      POSTGRES_USER: ${STAKEHOLDERS_DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${STAKEHOLDERS_DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${STAKEHOLDERS_DB_NAME:-stakeholders}
+    ports:
+      - "5433:5432"
+    volumes:
+      - stakeholders_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${STAKEHOLDERS_DB_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  blog-app:
+    build:
+      context: ./blog-service
+      dockerfile: Dockerfile
+    container_name: blog-app
+    networks:
+      - servers
+    ports:
+      - "8081:8081"
+    environment:
+      DB_HOST: blog-db
+      DB_PORT: 5432
+      DB_USER: ${BLOG_DB_USER:-postgres}
+      DB_PASSWORD: ${BLOG_DB_PASSWORD:-postgres}
+      DB_NAME: ${BLOG_DB_NAME:-blog}
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      blog-db:
+        condition: service_healthy
+
+  blog-db:
+    container_name: blog-db
+    image: postgres:16-alpine
+    restart: always
+    networks:
+      - servers
+    environment:
+      POSTGRES_USER: ${BLOG_DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${BLOG_DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${BLOG_DB_NAME:-blog}
+    ports:
+      - "5434:5432"
+    volumes:
+      - blog_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${BLOG_DB_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  stakeholders_pg_data:
+  blog_pg_data:
+
+networks:
+  servers:
+    name: servers
+    driver: bridge
