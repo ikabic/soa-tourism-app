@@ -437,3 +437,6 @@ FodyWeavers.xsd
 # OS
 .DS_Store
 Thumbs.db
+
+**/target/
+*.class

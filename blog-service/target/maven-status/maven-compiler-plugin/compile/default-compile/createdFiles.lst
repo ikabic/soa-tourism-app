@@ -1,6 +1,0 @@
-com\example\blogservice\dto\BlogPostRequest.class
-com\example\blogservice\model\BlogPost.class
-com\example\blogservice\repository\BlogPostRepository.class
-com\example\blogservice\BlogServiceApplication.class
-com\example\blogservice\controller\BlogPostController.class
-com\example\blogservice\security\JwtAuthFilter.class

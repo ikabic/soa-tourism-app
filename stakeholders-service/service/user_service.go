@@ -61,6 +61,10 @@ func (service *UserService) Login(request dto.LoginRequest) (string, error) {
 		return "", errors.New("Invalid credentials")
 	}
 
+	if user.IsBlocked {
+		return "", errors.New("User is blocked")
+	}
+
 	claims := jwt.MapClaims{
 		"userId": user.ID.String(),
 		"role":   user.Role,
