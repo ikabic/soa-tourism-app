@@ -13,6 +13,7 @@ import (
 	"github.com/gorilla/mux"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"stakeholders-service.xws.com/grpcserver"
 	"stakeholders-service.xws.com/handler"
 	"stakeholders-service.xws.com/middleware"
 	"stakeholders-service.xws.com/model"
@@ -68,5 +69,6 @@ func main() {
 	userHandler := &handler.UserHandler{Service: userService}
 	profileHandler := &handler.ProfileHandler{Service: profileService}
 
+	go grpcserver.StartGRPCServer(userRepo)
 	startServer(userHandler, profileHandler)
 }

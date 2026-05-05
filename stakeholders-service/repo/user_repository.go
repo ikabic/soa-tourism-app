@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"stakeholders-service.xws.com/model"
 )
@@ -11,6 +12,12 @@ type UserRepository struct {
 
 func (repo *UserRepository) Create(user *model.User) error {
 	return repo.DB.Create(user).Error
+}
+
+func (repo *UserRepository) FindByID(id uuid.UUID) *model.User {
+	var user model.User
+	repo.DB.Where("id = ?", id).Limit(1).Find(&user)
+	return &user
 }
 
 func (repo *UserRepository) FindByUsername(username string) *model.User {
