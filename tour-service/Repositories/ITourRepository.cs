@@ -1,0 +1,11 @@
+using TourService.Models;
+
+namespace TourService.Repositories;
+
+public interface ITourRepository
+{
+    Task<Tour> CreateAsync(Tour tour);
+    Task<List<Tour>> GetByAuthorIdAsync(string authorId);
+    Task<Tour?> GetByIdAsync(Guid id);
+    Task UpdateAsync(Tour tour);
+}
