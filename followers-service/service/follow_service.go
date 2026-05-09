@@ -47,3 +47,14 @@ func (s *FollowService) ValidateUser(userID string) error {
 	}
 	return nil
 }
+
+func (s *FollowService) GetRecommendations(userID string) ([]string, error) {
+	return s.Repo.GetRecommendations(userID)
+}
+
+func (s *FollowService) CanReadBlog(followerID, authorID string) (bool, error) {
+	if followerID == authorID {
+		return true, nil
+	}
+	return s.Repo.IsFollowing(followerID, authorID)
+}

@@ -1,9 +1,9 @@
-FROM golang:alpine AS builder
+FROM golang:alpine
 
 WORKDIR /app
 
-COPY ../proto ./proto
-COPY . .
+COPY proto ./proto
+COPY stakeholders-service/ ./stakeholders-service/
 
 WORKDIR /app/stakeholders-service
 

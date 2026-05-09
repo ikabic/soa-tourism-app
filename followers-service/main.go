@@ -40,9 +40,11 @@ func startServer(followHandler *handler.FollowHandler) {
 
 	protected.HandleFunc("/{userId}/follow", followHandler.Follow).Methods("POST")
 	protected.HandleFunc("/{userId}/unfollow", followHandler.Unfollow).Methods("DELETE")
+	protected.HandleFunc("/{userId}/can-read", followHandler.CanReadBlog).Methods("GET")
 
 	router.HandleFunc("/{userId}/followers", followHandler.GetFollowers).Methods("GET")
 	router.HandleFunc("/{userId}/following", followHandler.GetFollowing).Methods("GET")
+	router.HandleFunc("/{userId}/recommendations", followHandler.GetRecommendations).Methods("GET")
 
 	log.Println("Followers server starting on :8082")
 	log.Fatal(http.ListenAndServe(":8082", router))

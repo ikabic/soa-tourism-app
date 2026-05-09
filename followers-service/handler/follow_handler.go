@@ -56,3 +56,27 @@ func (h *FollowHandler) GetFollowing(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(ids)
 }
+
+func (h *FollowHandler) GetRecommendations(w http.ResponseWriter, r *http.Request) {
+	userID := mux.Vars(r)["userId"]
+	ids, err := h.Service.GetRecommendations(userID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(ids)
+}
+
+func (h *FollowHandler) CanReadBlog(w http.ResponseWriter, r *http.Request) {
+	followerID := r.Context().Value(middleware.UserIDKey).(string)
+	authorID := mux.Vars(r)["userId"]
+
+	can, err := h.Service.CanReadBlog(followerID, authorID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]bool{"canRead": can})
+}

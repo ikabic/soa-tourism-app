@@ -86,3 +86,32 @@ func (r *FollowRepository) queryUserIDs(query, userID string) ([]string, error) 
 	}
 	return result.([]string), nil
 }
+
+func (r *FollowRepository) GetRecommendations(userID string) ([]string, error) {
+	return r.queryUserIDs(` MATCH (me:User {id: $userId})-[:FOLLOWS]->(friend:User)-[:FOLLOWS]->(rec:User) WHERE rec.id <> $userId  AND NOT (me)-[:FOLLOWS]->(rec) RETURN DISTINCT rec.id AS id`, userID)
+}
+
+func (r *FollowRepository) IsFollowing(followerID, followedID string) (bool, error) {
+	ctx := context.Background()
+	session := r.Driver.NewSession(ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeRead})
+	defer session.Close(ctx)
+
+	result, err := session.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		records, err := tx.Run(ctx, `MATCH (a:User {id: $followerId})-[:FOLLOWS]->(b:User {id: $followedId}) RETURN count(*) > 0 AS follows`, map[string]any{
+			"followerId": followerID,
+			"followedId": followedID,
+		})
+		if err != nil {
+			return false, err
+		}
+		if records.Next(ctx) {
+			val, _ := records.Record().Get("follows")
+			return val.(bool), nil
+		}
+		return false, records.Err()
+	})
+	if err != nil {
+		return false, err
+	}
+	return result.(bool), nil
+}
