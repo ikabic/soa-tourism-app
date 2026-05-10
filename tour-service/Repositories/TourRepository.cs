@@ -36,4 +36,19 @@ public class TourRepository(TourDbContext db) : ITourRepository
         db.Tours.Update(tour);
         await db.SaveChangesAsync();
     }
+
+    public async Task<KeyPoint> AddKeyPointAsync(KeyPoint keyPoint)
+    {
+        db.KeyPoints.Add(keyPoint);
+        await db.SaveChangesAsync();
+        return keyPoint;
+    }
+
+    public async Task<List<KeyPoint>> GetKeyPointsByTourIdAsync(Guid tourId)
+    {
+        return await db.KeyPoints
+            .Where(k => k.TourId == tourId)
+            .OrderBy(k => k.Order)
+            .ToListAsync();
+    }
 }

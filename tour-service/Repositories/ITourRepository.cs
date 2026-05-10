@@ -8,4 +8,6 @@ public interface ITourRepository
     Task<List<Tour>> GetByAuthorIdAsync(string authorId);
     Task<Tour?> GetByIdAsync(Guid id);
     Task UpdateAsync(Tour tour);
+    Task<KeyPoint> AddKeyPointAsync(KeyPoint keyPoint);
+    Task<List<KeyPoint>> GetKeyPointsByTourIdAsync(Guid tourId);
 }
