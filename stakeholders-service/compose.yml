@@ -1,13 +1,14 @@
 services:
   app:
     build:
-      context: ./
-      dockerfile: Dockerfile
+      context: ../
+      dockerfile: stakeholders-service/Dockerfile
     container_name: app
     networks:
       - servers
     ports:
       - "8080:8080"
+      - "50051:50051"
     environment:
       DB_HOST: ${DB_HOST}
       DB_PORT: 5432
@@ -16,6 +17,7 @@ services:
       DB_NAME: ${DB_NAME}
       DB_SSLMODE: disable
       JWT_SECRET: ${JWT_SECRET}
+      GRPC_PORT: ${GRPC_PORT}
     depends_on:
       - database
 

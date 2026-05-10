@@ -1,5 +1,11 @@
-FROM golang:alpine AS builder
+FROM golang:alpine
+
 WORKDIR /app
-COPY . .
+
+COPY proto ./proto
+COPY stakeholders-service/ ./stakeholders-service/
+
+WORKDIR /app/stakeholders-service
+
 EXPOSE 8080
 ENTRYPOINT ["go", "run", "main.go"]

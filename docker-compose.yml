@@ -1,8 +1,8 @@
 services:
   stakeholders-app:
     build:
-      context: ./stakeholders-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./stakeholders-service/Dockerfile
     container_name: stakeholders-app
     networks:
       - servers
@@ -108,6 +108,7 @@ services:
       - blog-app
       - stakeholders-app
       - tour-app
+      - followers-app
 
   blog-db:
     container_name: blog-db
@@ -128,11 +129,48 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    
+  followers-app:
+    build:
+      context: .
+      dockerfile: ./followers-service/Dockerfile
+    container_name: followers-app
+    networks:
+      - servers
+    environment:
+      NEO4J_URI: bolt://followers-db:7687
+      NEO4J_USER: ${NEO4J_USER:-neo4j}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-password123}
+      JWT_SECRET: ${JWT_SECRET}
+      STAKEHOLDERS_GRPC_ADDR: stakeholders-app:50051
+    depends_on:
+      followers-db:
+        condition: service_healthy
+
+  followers-db:
+    container_name: followers-db
+    image: neo4j:5-community
+    restart: always
+    networks:
+      - servers
+    environment:
+      NEO4J_AUTH: ${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-password123}
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - followers_neo4j_data:/data
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:7474"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
 volumes:
   stakeholders_pg_data:
   blog_pg_data:
   tour_pg_data:
+  followers_neo4j_data:
 
 networks:
   servers:
