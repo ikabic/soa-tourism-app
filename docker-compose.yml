@@ -56,6 +56,45 @@ services:
       blog-db:
         condition: service_healthy
 
+  tour-app:
+    build:
+      context: ./tour-service
+      dockerfile: Dockerfile
+    container_name: tour-app
+    networks:
+      - servers
+    environment:
+      DB_HOST: tour-db
+      DB_PORT: 5432
+      DB_USER: ${TOUR_DB_USER:-postgres}
+      DB_PASSWORD: ${TOUR_DB_PASSWORD:-postgres}
+      DB_NAME: ${TOUR_DB_NAME:-tourdb}
+      JWT_SECRET: ${JWT_SECRET}
+      ASPNETCORE_URLS: http://+:8080
+    depends_on:
+      tour-db:
+        condition: service_healthy
+
+  tour-db:
+    container_name: tour-db
+    image: postgres:16-alpine
+    restart: always
+    networks:
+      - servers
+    environment:
+      POSTGRES_USER: ${TOUR_DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${TOUR_DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${TOUR_DB_NAME:-tourdb}
+    ports:
+      - "5435:5432"
+    volumes:
+      - tour_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${TOUR_DB_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   api-gateway:
     image: nginx:stable-alpine
     container_name: api-gateway
@@ -68,6 +107,7 @@ services:
     depends_on:
       - blog-app
       - stakeholders-app
+      - tour-app
       - followers-app
 
   blog-db:
@@ -129,6 +169,7 @@ services:
 volumes:
   stakeholders_pg_data:
   blog_pg_data:
+  tour_pg_data:
   followers_neo4j_data:
 
 networks:
