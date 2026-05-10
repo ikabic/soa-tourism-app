@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using TourService.Data;
 using TourService.Models;
+using TourService.Models.Enums;
 
 namespace TourService.Repositories;
 
@@ -49,6 +50,23 @@ public class TourRepository(TourDbContext db) : ITourRepository
         return await db.KeyPoints
             .Where(k => k.TourId == tourId)
             .OrderBy(k => k.Order)
+            .ToListAsync();
+    }
+
+    public async Task<TourDuration> AddDurationAsync(TourDuration duration)
+    {
+        db.TourDurations.Add(duration);
+        await db.SaveChangesAsync();
+        return duration;
+    }
+
+    public async Task<List<Tour>> GetPublishedToursAsync()
+    {
+        return await db.Tours
+            .Include(t => t.KeyPoints.OrderBy(k => k.Order))
+            .Include(t => t.Durations)
+            .Where(t => t.Status == TourStatus.Published)
+            .OrderByDescending(t => t.PublishedAt)
             .ToListAsync();
     }
 }

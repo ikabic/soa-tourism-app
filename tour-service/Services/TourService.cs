@@ -1,5 +1,6 @@
 using TourService.DTOs;
 using TourService.Models;
+using TourService.Models.Enums;
 using TourService.Repositories;
 
 namespace TourService.Services;
@@ -71,6 +72,115 @@ public class TourService(ITourRepository tourRepository) : ITourService
         var keyPoints = await tourRepository.GetKeyPointsByTourIdAsync(tourId);
         return keyPoints.Select(MapToKeyPointResponse).ToList();
     }
+
+    public async Task<TourDurationResponse> AddDurationAsync(string authorId, Guid tourId, CreateTourDurationRequest request)
+    {
+        var tour = await tourRepository.GetByIdAsync(tourId)
+            ?? throw new KeyNotFoundException("Tour not found");
+
+        if (tour.AuthorId != authorId)
+            throw new UnauthorizedAccessException("You are not the author of this tour");
+
+        var duration = new TourDuration
+        {
+            TourId = tourId,
+            TransportType = request.TransportType,
+            DurationInMinutes = request.DurationInMinutes
+        };
+
+        var created = await tourRepository.AddDurationAsync(duration);
+        return MapToDurationResponse(created);
+    }
+
+    public async Task<TourResponse> PublishTourAsync(string authorId, Guid tourId)
+    {
+        var tour = await tourRepository.GetByIdAsync(tourId)
+            ?? throw new KeyNotFoundException("Tour not found");
+
+        if (tour.AuthorId != authorId)
+            throw new UnauthorizedAccessException("You are not the author of this tour");
+
+        if (tour.Status != TourStatus.Draft)
+            throw new InvalidOperationException("Only draft tours can be published");
+
+        if (tour.KeyPoints.Count < 2)
+            throw new InvalidOperationException("Tour must have at least 2 key points");
+
+        if (tour.Durations.Count == 0)
+            throw new InvalidOperationException("Tour must have at least one duration");
+
+        tour.Status = TourStatus.Published;
+        tour.PublishedAt = DateTime.UtcNow;
+
+        await tourRepository.UpdateAsync(tour);
+        return MapToResponse(tour);
+    }
+
+    public async Task<TourResponse> ArchiveTourAsync(string authorId, Guid tourId)
+    {
+        var tour = await tourRepository.GetByIdAsync(tourId)
+            ?? throw new KeyNotFoundException("Tour not found");
+
+        if (tour.AuthorId != authorId)
+            throw new UnauthorizedAccessException("You are not the author of this tour");
+
+        if (tour.Status != TourStatus.Published)
+            throw new InvalidOperationException("Only published tours can be archived");
+
+        tour.Status = TourStatus.Archived;
+        tour.ArchivedAt = DateTime.UtcNow;
+
+        await tourRepository.UpdateAsync(tour);
+        return MapToResponse(tour);
+    }
+
+    public async Task<TourResponse> ActivateTourAsync(string authorId, Guid tourId)
+    {
+        var tour = await tourRepository.GetByIdAsync(tourId)
+            ?? throw new KeyNotFoundException("Tour not found");
+
+        if (tour.AuthorId != authorId)
+            throw new UnauthorizedAccessException("You are not the author of this tour");
+
+        if (tour.Status != TourStatus.Archived)
+            throw new InvalidOperationException("Only archived tours can be reactivated");
+
+        tour.Status = TourStatus.Published;
+        tour.ArchivedAt = null;
+
+        await tourRepository.UpdateAsync(tour);
+        return MapToResponse(tour);
+    }
+
+    public async Task<List<PublishedTourResponse>> GetPublishedToursAsync()
+    {
+        var tours = await tourRepository.GetPublishedToursAsync();
+        return tours.Select(t =>
+        {
+            var firstKeyPoint = t.KeyPoints.MinBy(k => k.Order);
+            return new PublishedTourResponse
+            {
+                Id = t.Id,
+                Name = t.Name,
+                Description = t.Description,
+                Difficulty = t.Difficulty,
+                Tags = t.Tags,
+                Price = t.Price,
+                LengthInKm = t.LengthInKm,
+                PublishedAt = t.PublishedAt!.Value,
+                Durations = t.Durations.Select(MapToDurationResponse).ToList(),
+                FirstKeyPoint = firstKeyPoint != null ? MapToKeyPointResponse(firstKeyPoint) : null
+            };
+        }).ToList();
+    }
+
+    private static TourDurationResponse MapToDurationResponse(TourDuration d) => new()
+    {
+        Id = d.Id,
+        TourId = d.TourId,
+        TransportType = d.TransportType,
+        DurationInMinutes = d.DurationInMinutes
+    };
 
     private static double CalculateDistance(double lat1, double lon1, double lat2, double lon2)
     {
