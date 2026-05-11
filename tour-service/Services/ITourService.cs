@@ -13,4 +13,6 @@ public interface ITourService
     Task<TourResponse> ArchiveTourAsync(string authorId, Guid tourId);
     Task<TourResponse> ActivateTourAsync(string authorId, Guid tourId);
     Task<List<PublishedTourResponse>> GetPublishedToursAsync();
+    Task<KeyPointResponse> UpdateKeyPointAsync(string authorId, Guid tourId, Guid keyPointId, UpdateKeyPointResponse request);
+    Task DeleteKeyPointAsync(string authorId, Guid tourId, Guid keyPointId);
 }

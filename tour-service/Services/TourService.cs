@@ -222,4 +222,68 @@ public class TourService(ITourRepository tourRepository) : ITourService
         ArchivedAt = tour.ArchivedAt,
         LengthInKm = tour.LengthInKm
     };
+
+    public async Task<KeyPointResponse> UpdateKeyPointAsync(string authorId, Guid tourId, Guid keyPointId, UpdateKeyPointResponse request)
+    {
+        var tour = await tourRepository.GetByIdAsync(tourId) ?? throw new KeyNotFoundException("Tour not found");
+
+        if (tour.AuthorId != authorId)
+            throw new UnauthorizedAccessException();
+
+        if (tour.Status != TourStatus.Draft)
+            throw new InvalidOperationException("Key points can only be modified on draft tours");
+
+        var keyPoint = tour.KeyPoints.FirstOrDefault(k => k.Id == keyPointId)
+            ?? throw new KeyNotFoundException("Key point not found");
+
+        keyPoint.Name = request.Name;
+        keyPoint.Description = request.Description;
+        keyPoint.ImageUrl = request.ImageUrl;
+        keyPoint.Latitude = request.Latitude;
+        keyPoint.Longitude = request.Longitude;
+
+        await tourRepository.UpdateKeyPointAsync(keyPoint);
+
+        tour.LengthInKm = RecalculateLength([.. tour.KeyPoints.OrderBy(k => k.Order)]);
+        await tourRepository.UpdateAsync(tour);
+
+        return MapToKeyPointResponse(keyPoint);
+    }
+
+    public async Task DeleteKeyPointAsync(string authorId, Guid tourId, Guid keyPointId)
+    {
+        var tour = await tourRepository.GetByIdAsync(tourId) ?? throw new KeyNotFoundException("Tour not found");
+
+        if (tour.AuthorId != authorId)
+            throw new UnauthorizedAccessException();
+
+        if (tour.Status != TourStatus.Draft)
+            throw new InvalidOperationException("Key points can only be deleted from draft tours");
+
+        var keyPoint = tour.KeyPoints.FirstOrDefault(k => k.Id == keyPointId) ?? throw new KeyNotFoundException("Key point not found");
+
+        await tourRepository.DeleteKeyPointAsync(keyPoint);
+
+        var remaining = tour.KeyPoints
+            .Where(k => k.Id != keyPointId)
+            .OrderBy(k => k.Order)
+            .ToList();
+
+        for (int i = 0; i < remaining.Count; i++)
+        {
+            remaining[i].Order = i + 1;
+            await tourRepository.UpdateKeyPointAsync(remaining[i]);
+        }
+
+        tour.LengthInKm = RecalculateLength(remaining);
+        await tourRepository.UpdateAsync(tour);
+    }
+
+    private static double RecalculateLength(List<KeyPoint> ordered)
+    {
+        double total = 0;
+        for (int i = 1; i < ordered.Count; i++)
+            total += CalculateDistance(ordered[i - 1].Latitude, ordered[i - 1].Longitude, ordered[i].Latitude, ordered[i].Longitude);
+        return total;
+    }
 }
