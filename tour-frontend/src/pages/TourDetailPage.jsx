@@ -1,0 +1,378 @@
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { MapContainer, TileLayer, Marker, Popup, Tooltip, useMapEvents, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import { api } from '../api/tourApi';
+import { useAuth } from '../context/AuthContext';
+import { Btn, StatusBadge, Difficulty, Tag, TransportPill, ErrBanner, Icon, ICONS } from '../components';
+import { formatDate } from '../utils/helpers';
+
+function makeKpIcon(index, isFirst) {
+  return L.divIcon({
+    html: `<div class="kp-marker ${isFirst ? 'kp-marker-first' : ''}"><span>${index + 1}</span></div>`,
+    className: '',
+    iconSize: [28, 28],
+    iconAnchor: [14, 28],
+  });
+}
+
+function makePendingIcon() {
+  return L.divIcon({
+    html: `<div class="kp-marker" style="background:var(--gold)"><span>+</span></div>`,
+    className: '',
+    iconSize: [28, 28],
+    iconAnchor: [14, 28],
+  });
+}
+
+function MapClickHandler({ onMapClick }) {
+  useMapEvents({ click: (e) => onMapClick(e.latlng) });
+  return null;
+}
+
+function FitBounds({ keyPoints }) {
+  const map = useMap();
+  useEffect(() => {
+    if (keyPoints.length > 0) {
+      const bounds = L.latLngBounds(keyPoints.map((k) => [k.latitude, k.longitude]));
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
+    }
+  }, [keyPoints.length]);
+  return null;
+}
+
+export default function TourDetailPage() {
+  const { id } = useParams();
+  const { token } = useAuth();
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+
+  const [err, setErr] = useState(null);
+  const [pendingPin, setPendingPin] = useState(null);
+  const [kpForm, setKpForm] = useState({ name: '', description: '', imageUrl: '' });
+  const [durForm, setDurForm] = useState({ transportType: 'Walking', durationInMinutes: 60 });
+
+  const { data: tour, isLoading, error: loadErr } = useQuery({
+    queryKey: ['tour', id],
+    queryFn: () => api.getTour(id, token),
+  });
+
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ['tour', id] });
+    qc.invalidateQueries({ queryKey: ['my-tours'] });
+  };
+
+  const publishMut = useMutation({
+    mutationFn: () => api.publishTour(id, token),
+    onSuccess: invalidate,
+    onError: (e) => setErr(e.message),
+  });
+  const archiveMut = useMutation({
+    mutationFn: () => api.archiveTour(id, token),
+    onSuccess: invalidate,
+    onError: (e) => setErr(e.message),
+  });
+  const activateMut = useMutation({
+    mutationFn: () => api.activateTour(id, token),
+    onSuccess: invalidate,
+    onError: (e) => setErr(e.message),
+  });
+  const kpMut = useMutation({
+    mutationFn: (data) => api.addKeyPoint(id, data, token),
+    onSuccess: () => {
+      invalidate();
+      setPendingPin(null);
+      setKpForm({ name: '', description: '', imageUrl: '' });
+    },
+    onError: (e) => setErr(e.message),
+  });
+  const durMut = useMutation({
+    mutationFn: (data) => api.addDuration(id, data, token),
+    onSuccess: () => {
+      invalidate();
+      setDurForm({ transportType: 'Walking', durationInMinutes: 60 });
+    },
+    onError: (e) => setErr(e.message),
+  });
+
+  if (isLoading) return <div className="container" style={{ padding: 40 }}>Loading…</div>;
+  if (loadErr) return <div className="container" style={{ padding: 40 }}><ErrBanner>{loadErr.message}</ErrBanner></div>;
+  if (!tour) return <div className="container" style={{ padding: 40 }}>Tour not found.</div>;
+
+  const keyPoints = [...(tour.keyPoints || [])].sort((a, b) => a.order - b.order);
+  const center = keyPoints[0] ? [keyPoints[0].latitude, keyPoints[0].longitude] : [46.37, 14.10];
+
+  const tryPublish = () => {
+    if (keyPoints.length < 2) { setErr('Tour must have at least 2 key points before it can be published.'); return; }
+    if ((tour.durations || []).length < 1) { setErr('Add at least one duration estimate before publishing.'); return; }
+    setErr(null);
+    publishMut.mutate();
+  };
+
+  const addKeyPoint = () => {
+    if (!pendingPin) return;
+    if (!kpForm.name.trim()) { setErr('Give the key point a name.'); return; }
+    setErr(null);
+    kpMut.mutate({
+      name: kpForm.name.trim(),
+      description: kpForm.description.trim(),
+      latitude: pendingPin.lat,
+      longitude: pendingPin.lng,
+      imageUrl: kpForm.imageUrl.trim() || null,
+    });
+  };
+
+  const addDuration = () => {
+    durMut.mutate({
+      transportType: durForm.transportType,
+      durationInMinutes: Number(durForm.durationInMinutes) || 0,
+    });
+  };
+
+  return (
+    <div className="container" style={{ padding: '32px 0 80px' }}>
+      <button className="btn btn-ghost btn-sm" onClick={() => navigate('/my-tours')} style={{ marginBottom: 16 }}>
+        <Icon d={ICONS.chevL} size={14} /> All my tours
+      </button>
+
+      {/* Header */}
+      <div className="card p-24 fade-up" style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 20, marginBottom: 20 }}>
+        <div className="col gap-8" style={{ minWidth: 0 }}>
+          <div className="row gap-12 wrap">
+            <StatusBadge status={tour.status} />
+            <Difficulty value={tour.difficulty} />
+            <span className="faint" style={{ fontSize: 13 }}>· created {formatDate(tour.createdAt)}</span>
+          </div>
+          <h1 style={{ marginTop: 4, fontSize: 36 }}>{tour.name}</h1>
+          <p className="muted" style={{ maxWidth: 700, fontSize: 15 }}>{tour.description}</p>
+          <div className="row gap-6 wrap" style={{ marginTop: 6 }}>
+            {tour.tags.map((t) => <Tag key={t}>{t}</Tag>)}
+          </div>
+          <div className="row gap-24" style={{ marginTop: 14 }}>
+            <div className="stat">
+              <span className="v">
+                {tour.lengthInKm != null ? tour.lengthInKm.toFixed(1) : '—'}
+                <span style={{ fontSize: 13, color: 'var(--ink-faint)' }}> km</span>
+              </span>
+              <span className="l">Distance</span>
+            </div>
+            <div className="stat">
+              <span className="v">{keyPoints.length}</span>
+              <span className="l">Key points</span>
+            </div>
+            <div className="stat">
+              <span className="v">{(tour.durations || []).length}</span>
+              <span className="l">Durations</span>
+            </div>
+            <div className="stat">
+              <span className="v">€{tour.price}</span>
+              <span className="l">Price</span>
+            </div>
+          </div>
+        </div>
+        <div className="col gap-8" style={{ alignItems: 'stretch', minWidth: 200 }}>
+          {tour.status === 'Draft' && (
+            <Btn variant="primary" icon="upload" disabled={publishMut.isPending} onClick={tryPublish}>
+              Publish tour
+            </Btn>
+          )}
+          {tour.status === 'Published' && (
+            <Btn variant="secondary" icon="archive" disabled={archiveMut.isPending} onClick={() => archiveMut.mutate()}>
+              Archive
+            </Btn>
+          )}
+          {tour.status === 'Archived' && (
+            <Btn variant="primary" icon="refresh" disabled={activateMut.isPending} onClick={() => activateMut.mutate()}>
+              Reactivate
+            </Btn>
+          )}
+          <span className="faint" style={{ fontSize: 11.5, textAlign: 'center', marginTop: 4 }}>
+            {tour.status === 'Published' ? `Live since ${formatDate(tour.publishedAt)}`
+              : tour.status === 'Archived' ? `Archived ${formatDate(tour.archivedAt)}`
+              : 'Not visible to travellers'}
+          </span>
+        </div>
+      </div>
+
+      {err && <div style={{ marginBottom: 16 }}><ErrBanner onClose={() => setErr(null)}>{err}</ErrBanner></div>}
+
+      {/* Map + right panel */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 20 }}>
+        {/* Map */}
+        <div className="card fade-up" style={{ padding: 16 }}>
+          <div className="row between" style={{ marginBottom: 12, alignItems: 'baseline' }}>
+            <div>
+              <span className="eyebrow">The route</span>
+              <h3 style={{ marginTop: 4 }}>Map &amp; key points</h3>
+            </div>
+            <span className="hand">click the map to drop a pin</span>
+          </div>
+
+          <div style={{ height: 460, borderRadius: 12, overflow: 'hidden', border: '0.5px solid #c8d5c0' }}>
+            <MapContainer
+              center={center}
+              zoom={13}
+              style={{ height: '100%', width: '100%' }}
+              scrollWheelZoom>
+              <TileLayer
+                url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+                subdomains="abcd"
+                attribution="© OpenStreetMap · © CARTO"
+                maxZoom={19}
+              />
+              <MapClickHandler onMapClick={(latlng) => {
+                setPendingPin({ lat: latlng.lat, lng: latlng.lng });
+                setKpForm({ name: '', description: '', imageUrl: '' });
+              }} />
+              {keyPoints.length > 0 && <FitBounds keyPoints={keyPoints} />}
+              {keyPoints.map((kp, i) => (
+                <Marker key={kp.id} position={[kp.latitude, kp.longitude]} icon={makeKpIcon(i, i === 0)}>
+                  <Popup>
+                    <div style={{ minWidth: 180 }}>
+                      <div style={{ fontFamily: 'var(--serif)', fontSize: 15, color: 'var(--sage-darker)', marginBottom: 4 }}>{kp.name}</div>
+                      <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', lineHeight: 1.4 }}>{kp.description}</div>
+                    </div>
+                  </Popup>
+                  <Tooltip direction="top" offset={[0, -24]} opacity={0.95}>{kp.name}</Tooltip>
+                </Marker>
+              ))}
+              {pendingPin && (
+                <Marker position={[pendingPin.lat, pendingPin.lng]} icon={makePendingIcon()} />
+              )}
+            </MapContainer>
+          </div>
+
+          {pendingPin && (
+            <div className="card-warm card p-16 fade-up" style={{ marginTop: 14 }}>
+              <div className="row between" style={{ marginBottom: 10 }}>
+                <h4>New key point</h4>
+                <span className="faint" style={{ fontSize: 12 }}>
+                  {pendingPin.lat.toFixed(4)}°, {pendingPin.lng.toFixed(4)}°
+                </span>
+              </div>
+              <div className="col gap-12">
+                <div className="field">
+                  <label className="field-label">Name</label>
+                  <input className="input" placeholder="e.g. Wooden bridge"
+                    value={kpForm.name} onChange={(e) => setKpForm({ ...kpForm, name: e.target.value })} />
+                </div>
+                <div className="field">
+                  <label className="field-label">Description</label>
+                  <textarea className="textarea" rows={2} placeholder="A short note for travellers…"
+                    value={kpForm.description} onChange={(e) => setKpForm({ ...kpForm, description: e.target.value })} />
+                </div>
+                <div className="field">
+                  <label className="field-label">Image URL (optional)</label>
+                  <input className="input" placeholder="https://…"
+                    value={kpForm.imageUrl} onChange={(e) => setKpForm({ ...kpForm, imageUrl: e.target.value })} />
+                </div>
+                <div className="row gap-8" style={{ justifyContent: 'flex-end' }}>
+                  <Btn variant="ghost" size="sm" onClick={() => setPendingPin(null)}>Cancel</Btn>
+                  <Btn variant="primary" size="sm" icon="plus" onClick={addKeyPoint} disabled={kpMut.isPending}>
+                    {kpMut.isPending ? 'Adding…' : 'Add key point'}
+                  </Btn>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right panel */}
+        <div className="col gap-16">
+          {/* Key points list */}
+          <div className="card fade-up p-20">
+            <div className="row between" style={{ marginBottom: 10, alignItems: 'baseline' }}>
+              <div>
+                <span className="eyebrow">Stops</span>
+                <h3 style={{ marginTop: 4 }}>{keyPoints.length} key point{keyPoints.length !== 1 ? 's' : ''}</h3>
+              </div>
+            </div>
+            {keyPoints.length === 0 ? (
+              <div className="empty" style={{ padding: 22 }}>
+                <p style={{ margin: 0 }}>Click anywhere on the map to add the first stop.</p>
+              </div>
+            ) : (
+              <ol style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 0 }}>
+                {keyPoints.map((kp, i, arr) => (
+                  <li key={kp.id} style={{
+                    display: 'grid', gridTemplateColumns: '32px 1fr', gap: 12,
+                    padding: '10px 0',
+                    borderTop: i === 0 ? 'none' : '0.5px dashed var(--sage-line)',
+                  }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <span style={{
+                        width: 26, height: 26, borderRadius: '50%',
+                        background: i === 0 ? 'var(--sage-deep)' : 'var(--terracotta)',
+                        color: 'var(--paper)',
+                        display: 'grid', placeItems: 'center',
+                        fontFamily: 'var(--serif)', fontSize: 13, fontWeight: 600,
+                      }}>{i + 1}</span>
+                      {i < arr.length - 1 && (
+                        <span style={{ width: 1.5, flex: 1, background: 'var(--sage-line)', marginTop: 4, minHeight: 18 }} />
+                      )}
+                    </div>
+                    <div>
+                      <h4 style={{ fontSize: 15 }}>{kp.name}</h4>
+                      <span className="faint" style={{ fontSize: 11 }}>{kp.latitude.toFixed(3)}, {kp.longitude.toFixed(3)}</span>
+                      <p className="muted" style={{ fontSize: 13, marginTop: 4, lineHeight: 1.5 }}>{kp.description}</p>
+                      {kp.imageUrl && (
+                        <img src={kp.imageUrl} alt={kp.name}
+                          style={{ width: '100%', borderRadius: 8, marginTop: 8, objectFit: 'cover', maxHeight: 160 }} />
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </div>
+
+          {/* Durations */}
+          <div className="card fade-up p-20">
+            <div className="row between" style={{ marginBottom: 12, alignItems: 'baseline' }}>
+              <div>
+                <span className="eyebrow">Travel time</span>
+                <h3 style={{ marginTop: 4 }}>Durations</h3>
+              </div>
+            </div>
+
+            {(tour.durations || []).length === 0 ? (
+              <p className="muted" style={{ fontSize: 13.5 }}>No estimates yet — at least one is required to publish.</p>
+            ) : (
+              <div className="row gap-8 wrap" style={{ marginBottom: 14 }}>
+                {tour.durations.map((d) => (
+                  <TransportPill key={d.id} type={d.transportType} mins={d.durationInMinutes} />
+                ))}
+              </div>
+            )}
+
+            <hr className="hr-dashed" style={{ margin: '10px 0 14px' }} />
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8, alignItems: 'end' }}>
+              <div className="field">
+                <label className="field-label">Transport</label>
+                <select className="select" value={durForm.transportType}
+                  onChange={(e) => setDurForm({ ...durForm, transportType: e.target.value })}>
+                  <option value="Walking">Walking</option>
+                  <option value="Bicycle">Bicycle</option>
+                  <option value="Car">Car</option>
+                </select>
+              </div>
+              <div className="field">
+                <label className="field-label">Minutes</label>
+                <input className="input" type="number" min={1} value={durForm.durationInMinutes}
+                  onChange={(e) => setDurForm({ ...durForm, durationInMinutes: e.target.value })} />
+              </div>
+              <div className="field">
+                <label className="field-label" style={{ visibility: 'hidden' }}>·</label>
+                <Btn variant="primary" icon="plus" size="sm" onClick={addDuration} disabled={durMut.isPending}>
+                  Add
+                </Btn>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -21,14 +21,8 @@ public class KeyPointController(ITourService tourService) : ControllerBase
             var keyPoint = await tourService.AddKeyPointAsync(authorId, tourId, request);
             return CreatedAtAction(nameof(GetKeyPoints), new { tourId }, keyPoint);
         }
-        catch (KeyNotFoundException e)
-        {
-            return NotFound(e.Message);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
+        catch (KeyNotFoundException e) { return NotFound(e.Message); }
+        catch (UnauthorizedAccessException) { return Forbid(); }
     }
 
     [HttpGet]
@@ -42,14 +36,8 @@ public class KeyPointController(ITourService tourService) : ControllerBase
             var keyPoints = await tourService.GetKeyPointsAsync(authorId, tourId);
             return Ok(keyPoints);
         }
-        catch (KeyNotFoundException e)
-        {
-            return NotFound(e.Message);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
+        catch (KeyNotFoundException e) { return NotFound(e.Message); }
+        catch (UnauthorizedAccessException) { return Forbid(); }
     }
 
     [HttpPut("{keyPointId:guid}")]

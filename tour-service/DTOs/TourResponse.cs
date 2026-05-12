@@ -16,4 +16,6 @@ public class TourResponse
     public DateTime? PublishedAt { get; set; }
     public DateTime? ArchivedAt { get; set; }
     public double? LengthInKm { get; set; }
+    public List<KeyPointResponse> KeyPoints { get; set; } = [];
+    public List<TourDurationResponse> Durations { get; set; } = [];
 }

@@ -15,7 +15,8 @@ public class TourService(ITourRepository tourRepository) : ITourService
             Name = request.Name,
             Description = request.Description,
             Difficulty = request.Difficulty,
-            Tags = request.Tags
+            Tags = request.Tags,
+            Price = request.Price
         };
 
         var created = await tourRepository.CreateAsync(tour);
@@ -26,6 +27,17 @@ public class TourService(ITourRepository tourRepository) : ITourService
     {
         var tours = await tourRepository.GetByAuthorIdAsync(authorId);
         return tours.Select(MapToResponse).ToList();
+    }
+
+    public async Task<TourResponse> GetTourAsync(string authorId, Guid tourId)
+    {
+        var tour = await tourRepository.GetByIdAsync(tourId)
+            ?? throw new KeyNotFoundException("Tour not found");
+
+        if (tour.AuthorId != authorId)
+            throw new UnauthorizedAccessException("You are not the author of this tour");
+
+        return MapToResponse(tour);
     }
 
     public async Task<KeyPointResponse> AddKeyPointAsync(string authorId, Guid tourId, CreateKeyPointRequest request)
@@ -102,6 +114,12 @@ public class TourService(ITourRepository tourRepository) : ITourService
 
         if (tour.Status != TourStatus.Draft)
             throw new InvalidOperationException("Only draft tours can be published");
+
+        if (string.IsNullOrWhiteSpace(tour.Name) || string.IsNullOrWhiteSpace(tour.Description))
+            throw new InvalidOperationException("Tour must have a name and description");
+
+        if (tour.Tags == null || tour.Tags.Count == 0)
+            throw new InvalidOperationException("Tour must have at least one tag");
 
         if (tour.KeyPoints.Count < 2)
             throw new InvalidOperationException("Tour must have at least 2 key points");
@@ -220,7 +238,9 @@ public class TourService(ITourRepository tourRepository) : ITourService
         CreatedAt = tour.CreatedAt,
         PublishedAt = tour.PublishedAt,
         ArchivedAt = tour.ArchivedAt,
-        LengthInKm = tour.LengthInKm
+        LengthInKm = tour.LengthInKm,
+        KeyPoints = tour.KeyPoints.OrderBy(k => k.Order).Select(MapToKeyPointResponse).ToList(),
+        Durations = tour.Durations.Select(MapToDurationResponse).ToList()
     };
 
     public async Task<KeyPointResponse> UpdateKeyPointAsync(string authorId, Guid tourId, Guid keyPointId, UpdateKeyPointResponse request)
