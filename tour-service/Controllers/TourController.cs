@@ -18,6 +18,21 @@ public class TourController(ITourService tourService) : ControllerBase
         return CreatedAtAction(nameof(GetMyTours), new { }, tour);
     }
 
+    [HttpGet("{tourId:guid}")]
+    public async Task<ActionResult<TourResponse>> GetTour(Guid tourId)
+    {
+        var authorId = HttpContext.Items["userId"] as string;
+        if (string.IsNullOrEmpty(authorId)) return Unauthorized();
+
+        try
+        {
+            var tour = await tourService.GetTourAsync(authorId, tourId);
+            return Ok(tour);
+        }
+        catch (KeyNotFoundException e) { return NotFound(e.Message); }
+        catch (UnauthorizedAccessException) { return Forbid(); }
+    }
+
     [HttpGet("my")]
     public async Task<ActionResult<List<TourResponse>>> GetMyTours()
     {

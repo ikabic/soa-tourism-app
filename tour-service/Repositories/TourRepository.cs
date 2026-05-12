@@ -69,4 +69,18 @@ public class TourRepository(TourDbContext db) : ITourRepository
             .OrderByDescending(t => t.PublishedAt)
             .ToListAsync();
     }
+
+    public async Task<KeyPoint?> GetKeyPointByIdAsync(Guid keyPointId) => await db.KeyPoints.FirstOrDefaultAsync(k => k.Id == keyPointId);
+
+    public async Task UpdateKeyPointAsync(KeyPoint keyPoint)
+    {
+        db.KeyPoints.Update(keyPoint);
+        await db.SaveChangesAsync();
+    }
+
+    public async Task DeleteKeyPointAsync(KeyPoint keyPoint)
+    {
+        db.KeyPoints.Remove(keyPoint);
+        await db.SaveChangesAsync();
+    }
 }

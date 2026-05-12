@@ -16,4 +16,6 @@ public class CreateTourRequest
 
     [Required]
     public List<string> Tags { get; set; } = [];
+
+    public decimal Price { get; set; } = 0;
 }

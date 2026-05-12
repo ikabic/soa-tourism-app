@@ -21,14 +21,8 @@ public class KeyPointController(ITourService tourService) : ControllerBase
             var keyPoint = await tourService.AddKeyPointAsync(authorId, tourId, request);
             return CreatedAtAction(nameof(GetKeyPoints), new { tourId }, keyPoint);
         }
-        catch (KeyNotFoundException e)
-        {
-            return NotFound(e.Message);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
+        catch (KeyNotFoundException e) { return NotFound(e.Message); }
+        catch (UnauthorizedAccessException) { return Forbid(); }
     }
 
     [HttpGet]
@@ -42,13 +36,39 @@ public class KeyPointController(ITourService tourService) : ControllerBase
             var keyPoints = await tourService.GetKeyPointsAsync(authorId, tourId);
             return Ok(keyPoints);
         }
-        catch (KeyNotFoundException e)
+        catch (KeyNotFoundException e) { return NotFound(e.Message); }
+        catch (UnauthorizedAccessException) { return Forbid(); }
+    }
+
+    [HttpPut("{keyPointId:guid}")]
+    public async Task<ActionResult<KeyPointResponse>> UpdateKeyPoint(Guid tourId, Guid keyPointId, [FromBody] UpdateKeyPointResponse request)
+    {
+        var authorId = HttpContext.Items["userId"] as string;
+        if (string.IsNullOrEmpty(authorId)) return Unauthorized();
+
+        try
         {
-            return NotFound(e.Message);
+            var kp = await tourService.UpdateKeyPointAsync(authorId, tourId, keyPointId, request);
+            return Ok(kp);
         }
-        catch (UnauthorizedAccessException)
+        catch (KeyNotFoundException e) { return NotFound(e.Message); }
+        catch (UnauthorizedAccessException) { return Forbid(); }
+        catch (InvalidOperationException e) { return BadRequest(e.Message); }
+    }
+
+    [HttpDelete("{keyPointId:guid}")]
+    public async Task<IActionResult> DeleteKeyPoint(Guid tourId, Guid keyPointId)
+    {
+        var authorId = HttpContext.Items["userId"] as string;
+        if (string.IsNullOrEmpty(authorId)) return Unauthorized();
+
+        try
         {
-            return Forbid();
+            await tourService.DeleteKeyPointAsync(authorId, tourId, keyPointId);
+            return Ok("Keypoint deleted");
         }
+        catch (KeyNotFoundException e) { return NotFound(e.Message); }
+        catch (UnauthorizedAccessException) { return Forbid(); }
+        catch (InvalidOperationException e) { return BadRequest(e.Message); }
     }
 }
