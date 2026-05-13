@@ -70,10 +70,13 @@ services:
       DB_PASSWORD: ${TOUR_DB_PASSWORD:-postgres}
       DB_NAME: ${TOUR_DB_NAME:-tourdb}
       JWT_SECRET: ${JWT_SECRET}
+      PURCHASE_SERVICE_URL: http://purchase-app:8083
       ASPNETCORE_URLS: http://+:8080
     depends_on:
       tour-db:
         condition: service_healthy
+      purchase-app:
+        condition: service_started
 
   tour-db:
     container_name: tour-db
@@ -91,6 +94,48 @@ services:
       - tour_pg_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${TOUR_DB_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  purchase-app:
+    build:
+      context: .
+      dockerfile: ./purchase-service/Dockerfile
+    container_name: purchase-app
+    networks:
+      - servers
+    environment:
+      DB_HOST: purchase-db
+      DB_PORT: 5432
+      DB_USER: ${PURCHASE_DB_USER:-postgres}
+      DB_PASSWORD: ${PURCHASE_DB_PASSWORD:-postgres}
+      DB_NAME: ${PURCHASE_DB_NAME:-purchase}
+      DB_SSLMODE: disable
+      JWT_SECRET: ${JWT_SECRET}
+      TOUR_SERVICE_URL: http://tour-app:8080
+    depends_on:
+      purchase-db:
+        condition: service_healthy
+    ports:
+      - "8086:8083"
+
+  purchase-db:
+    container_name: purchase-db
+    image: postgres:16-alpine
+    restart: always
+    networks:
+      - servers
+    environment:
+      POSTGRES_USER: ${PURCHASE_DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${PURCHASE_DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${PURCHASE_DB_NAME:-purchase}
+    ports:
+      - "5436:5432"
+    volumes:
+      - purchase_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PURCHASE_DB_USER:-postgres}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -170,6 +215,7 @@ volumes:
   stakeholders_pg_data:
   blog_pg_data:
   tour_pg_data:
+  purchase_pg_data:
   followers_neo4j_data:
 
 networks:
