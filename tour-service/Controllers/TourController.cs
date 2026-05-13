@@ -33,6 +33,23 @@ public class TourController(ITourService tourService) : ControllerBase
         catch (UnauthorizedAccessException) { return Forbid(); }
     }
 
+    [HttpGet("{tourId:guid}/public")]
+    public async Task<ActionResult<PublicTourResponse>> GetPublicTour(Guid tourId)
+    {
+        var userId = HttpContext.Items["userId"] as string;
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var authHeader = Request.Headers["Authorization"].ToString();
+
+        try
+        {
+            var tour = await tourService.GetPublicTourAsync(userId, authHeader, tourId);
+            return Ok(tour);
+        }
+        catch (KeyNotFoundException e) { return NotFound(e.Message); }
+        catch (UnauthorizedAccessException) { return Forbid(); }
+    }
+
     [HttpGet("my")]
     public async Task<ActionResult<List<TourResponse>>> GetMyTours()
     {
@@ -51,6 +68,22 @@ public class TourController(ITourService tourService) : ControllerBase
 
         var tours = await tourService.GetPublishedToursAsync();
         return Ok(tours);
+    }
+
+    [HttpPut("{tourId:guid}")]
+    public async Task<ActionResult<TourResponse>> UpdateTour(Guid tourId, [FromBody] UpdateTourRequest request)
+    {
+        var authorId = HttpContext.Items["userId"] as string;
+        if (string.IsNullOrEmpty(authorId)) return Unauthorized();
+
+        try
+        {
+            var tour = await tourService.UpdateTourAsync(authorId, tourId, request);
+            return Ok(tour);
+        }
+        catch (KeyNotFoundException e) { return NotFound(e.Message); }
+        catch (UnauthorizedAccessException) { return Forbid(); }
+        catch (InvalidOperationException e) { return BadRequest(e.Message); }
     }
 
     [HttpPut("{tourId:guid}/publish")]

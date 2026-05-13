@@ -21,6 +21,7 @@ export const ICONS = {
   arrow:   "M5 12h14m-5-5 5 5-5 5",
   chevR:   "M9 6l6 6-6 6",
   chevL:   "M15 6l-6 6 6 6",
+  cart:    "M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z",
   walk:    "M12 5a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM12 7v5M12 9l-4 2M12 9l3-2M12 12l-2 6M12 12l2 5",
   bike:    "M5 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm12 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM6.5 13l3-5h4l1.5 5M11 8l-1-3h-2",
   car:     "M4 13l2-5h10l2 5M3 13h16v4a1 1 0 0 1-1 1h-1v-1H7v1H6a1 1 0 0 1-1-1v-4Zm3 3h2m6 0h2",
@@ -38,14 +39,19 @@ export function Icon({ d, size = 18, stroke = 1.5, fill = 'none', style }) {
   );
 }
 
-export function Btn({ children, variant = 'primary', size, icon, iconRight, onClick, disabled, type = 'button', style }) {
+export function Btn({ children, variant = 'primary', size, icon, iconRight, ariaLabel, iconOnly, onClick, disabled, type = 'button', style }) {
+  const classes = ['btn', `btn-${variant}`];
+  if (size === 'sm') classes.push('btn-sm');
+  if (size === 'lg') classes.push('btn-lg');
+  if (iconOnly) classes.push('btn-icon');
   return (
     <button
       type={type}
       onClick={onClick}
       disabled={disabled}
+      aria-label={ariaLabel}
       style={{ opacity: disabled ? 0.55 : 1, ...(style || {}) }}
-      className={`btn btn-${variant} ${size === 'sm' ? 'btn-sm' : size === 'lg' ? 'btn-lg' : ''}`.trim()}
+      className={classes.join(' ').trim()}
     >
       {icon && <Icon d={ICONS[icon]} size={16} />}
       {children}

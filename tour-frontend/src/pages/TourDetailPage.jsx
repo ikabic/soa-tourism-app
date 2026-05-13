@@ -52,6 +52,8 @@ export default function TourDetailPage() {
   const [pendingPin, setPendingPin] = useState(null);
   const [kpForm, setKpForm] = useState({ name: '', description: '', imageUrl: '' });
   const [durForm, setDurForm] = useState({ transportType: 'Walking', durationInMinutes: 60 });
+  const [draftForm, setDraftForm] = useState({ name: '', description: '', difficulty: 'Medium', tagsRaw: '', price: 0 });
+  const [showDraftEditor, setShowDraftEditor] = useState(false);
 
   const { data: tour, isLoading, error: loadErr } = useQuery({
     queryKey: ['tour', id],
@@ -62,6 +64,17 @@ export default function TourDetailPage() {
     qc.invalidateQueries({ queryKey: ['tour', id] });
     qc.invalidateQueries({ queryKey: ['my-tours'] });
   };
+
+  useEffect(() => {
+    if (!tour) return;
+    setDraftForm({
+      name: tour.name,
+      description: tour.description,
+      difficulty: tour.difficulty,
+      tagsRaw: (tour.tags || []).join(', '),
+      price: tour.price ?? 0,
+    });
+  }, [tour]);
 
   const publishMut = useMutation({
     mutationFn: () => api.publishTour(id, token),
@@ -76,6 +89,14 @@ export default function TourDetailPage() {
   const activateMut = useMutation({
     mutationFn: () => api.activateTour(id, token),
     onSuccess: invalidate,
+    onError: (e) => setErr(e.message),
+  });
+  const updateTourMut = useMutation({
+    mutationFn: (data) => api.updateTour(id, data, token),
+    onSuccess: () => {
+      invalidate();
+      setErr(null);
+    },
     onError: (e) => setErr(e.message),
   });
   const kpMut = useMutation({
@@ -130,6 +151,20 @@ export default function TourDetailPage() {
     });
   };
 
+  const saveDraft = () => {
+    if (!draftForm.name.trim()) { setErr('Give your tour a name.'); return; }
+    if (!draftForm.description.trim()) { setErr('Add a short description for travellers.'); return; }
+    if (!draftForm.tagsRaw.trim()) { setErr('Add at least one tag.'); return; }
+    setErr(null);
+    updateTourMut.mutate({
+      name: draftForm.name.trim(),
+      description: draftForm.description.trim(),
+      difficulty: draftForm.difficulty,
+      tags: draftForm.tagsRaw.split(',').map((t) => t.trim()).filter(Boolean),
+      price: Number(draftForm.price) || 0,
+    });
+  };
+
   return (
     <div className="container" style={{ padding: '32px 0 80px' }}>
       <button className="btn btn-ghost btn-sm" onClick={() => navigate('/my-tours')} style={{ marginBottom: 16 }}>
@@ -173,6 +208,11 @@ export default function TourDetailPage() {
         </div>
         <div className="col gap-8" style={{ alignItems: 'stretch', minWidth: 200 }}>
           {tour.status === 'Draft' && (
+            <Btn variant="ghost" size="sm" icon={showDraftEditor ? 'close' : 'edit'} onClick={() => setShowDraftEditor((prev) => !prev)}>
+              {showDraftEditor ? 'Hide editor' : 'Edit draft'}
+            </Btn>
+          )}
+          {tour.status === 'Draft' && (
             <Btn variant="primary" icon="upload" disabled={publishMut.isPending} onClick={tryPublish}>
               Publish tour
             </Btn>
@@ -194,6 +234,90 @@ export default function TourDetailPage() {
           </span>
         </div>
       </div>
+
+      {tour.status === 'Draft' && (
+        <div className="card fade-up p-24" style={{ marginBottom: 20 }}>
+          <div className="row between" style={{ alignItems: 'baseline', marginBottom: 16 }}>
+            <div>
+              <span className="eyebrow">Draft</span>
+              <h3 style={{ marginTop: 4 }}>{showDraftEditor ? 'Edit tour draft' : 'Draft details'}</h3>
+              {!showDraftEditor && (
+                <p className="muted" style={{ marginTop: 8, maxWidth: 620 }}>
+                  This tour is still private. Open the editor to change the title, description, price and tags.
+                </p>
+              )}
+            </div>
+            <div className="row gap-8">
+              <Btn variant="ghost" size="sm" icon={showDraftEditor ? 'close' : 'edit'} onClick={() => setShowDraftEditor((prev) => !prev)}>
+                {showDraftEditor ? 'Hide editor' : 'Edit draft'}
+              </Btn>
+              {showDraftEditor && (
+                <Btn variant="primary" size="sm" onClick={saveDraft} disabled={updateTourMut.isPending}>
+                  {updateTourMut.isPending ? 'Saving…' : 'Save changes'}
+                </Btn>
+              )}
+            </div>
+          </div>
+
+          {showDraftEditor ? (
+            <div className="col gap-16">
+              <div className="field">
+                <label className="field-label">Tour name</label>
+                <input className="input" value={draftForm.name}
+                  onChange={(e) => setDraftForm({ ...draftForm, name: e.target.value })} />
+              </div>
+
+              <div className="field">
+                <label className="field-label">Description</label>
+                <textarea className="textarea" rows={3}
+                  value={draftForm.description}
+                  onChange={(e) => setDraftForm({ ...draftForm, description: e.target.value })} />
+              </div>
+
+              <div className="row gap-16" style={{ alignItems: 'flex-end' }}>
+                <div className="field" style={{ flex: 1 }}>
+                  <label className="field-label">Difficulty</label>
+                  <select className="select" value={draftForm.difficulty}
+                    onChange={(e) => setDraftForm({ ...draftForm, difficulty: e.target.value })}>
+                    <option>Easy</option>
+                    <option>Medium</option>
+                    <option>Hard</option>
+                  </select>
+                </div>
+
+                <div className="field" style={{ flex: 1 }}>
+                  <label className="field-label">Price</label>
+                  <input className="input" type="number" min={0} step="0.50" value={draftForm.price}
+                    onChange={(e) => setDraftForm({ ...draftForm, price: Number(e.target.value) })} />
+                </div>
+              </div>
+
+              <div className="field">
+                <label className="field-label">Tags</label>
+                <input className="input" value={draftForm.tagsRaw}
+                  onChange={(e) => setDraftForm({ ...draftForm, tagsRaw: e.target.value })}
+                  placeholder="lake, alps, sunrise" />
+                <span className="field-hint">Comma-separated tags help travellers find your tour.</span>
+              </div>
+            </div>
+          ) : (
+            <div className="row wrap" style={{ gap: 24 }}>
+              <div style={{ minWidth: 220, flex: 1 }}>
+                <div style={{ marginBottom: 12 }}><strong>Name</strong></div>
+                <div>{draftForm.name}</div>
+              </div>
+              <div style={{ minWidth: 220, flex: 1 }}>
+                <div style={{ marginBottom: 12 }}><strong>Price</strong></div>
+                <div>€{draftForm.price}</div>
+              </div>
+              <div style={{ minWidth: 220, flex: 1 }}>
+                <div style={{ marginBottom: 12 }}><strong>Tags</strong></div>
+                <div>{draftForm.tagsRaw || 'No tags yet'}</div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {err && <div style={{ marginBottom: 16 }}><ErrBanner onClose={() => setErr(null)}>{err}</ErrBanner></div>}
 

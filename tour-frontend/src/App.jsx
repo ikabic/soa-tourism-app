@@ -7,6 +7,8 @@ import CreateTourPage from './pages/CreateTourPage';
 import TourDetailPage from './pages/TourDetailPage';
 import BrowseToursPage from './pages/BrowseToursPage';
 import PublicTourDetailPage from './pages/PublicTourDetailPage';
+import CartPage from './pages/CartPage';
+import PurchasedToursPage from './pages/PurchasedToursPage';
 import SimulatorPage from './pages/SimulatorPage';
 import RegisterPage from './pages/RegisterPage';
 import AdminUsersPage from './pages/AdminUsersPage';
@@ -43,6 +45,9 @@ function Nav() {
               <NavLink to="/browse" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
                 Browse tours
               </NavLink>
+              <NavLink to="/my-purchases" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+                My purchases
+              </NavLink>
               <NavLink to="/simulator" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
                 Simulator
               </NavLink>
@@ -56,6 +61,9 @@ function Nav() {
          
         </div>
         <div className="nav-right" style={{ flex: 1, justifyContent: 'flex-end' }}>
+          {user?.role === 'tourist' && (
+            <Btn variant="ghost" icon="cart" ariaLabel="Open cart" iconOnly onClick={() => navigate('/cart')} />
+          )}
           <div className="nav-user">
             <span className="muted" style={{ fontSize: 13 }}>{user?.role}</span>
             <div className="avatar">{initials}</div>
@@ -102,6 +110,12 @@ export default function App() {
         } />
         <Route path="browse" element={<BrowseToursPage />} />
         <Route path="browse/:id" element={<PublicTourDetailPage />} />
+        <Route path="cart" element={
+          user?.role === 'tourist' ? <CartPage /> : <Navigate to="/browse" replace />
+        } />
+        <Route path="my-purchases" element={
+          user?.role === 'tourist' ? <PurchasedToursPage /> : <Navigate to="/browse" replace />
+        } />
         <Route path="simulator" element={
           user?.role === 'tourist' ? <SimulatorPage /> : <Navigate to="/browse" replace />
         } />
