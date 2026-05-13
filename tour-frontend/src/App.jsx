@@ -7,6 +7,7 @@ import CreateTourPage from './pages/CreateTourPage';
 import TourDetailPage from './pages/TourDetailPage';
 import BrowseToursPage from './pages/BrowseToursPage';
 import PublicTourDetailPage from './pages/PublicTourDetailPage';
+import SimulatorPage from './pages/SimulatorPage';
 
 function RequireAuth({ children }) {
   const { user } = useAuth();
@@ -36,9 +37,14 @@ function Nav() {
             </>
           )}
           {user?.role === 'tourist' && (
-            <NavLink to="/browse" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
-              Browse tours
-            </NavLink>
+            <>
+              <NavLink to="/browse" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+                Browse tours
+              </NavLink>
+              <NavLink to="/simulator" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+                Simulator
+              </NavLink>
+            </>
           )}
         </div>
         <div className="nav-right" style={{ flex: 1, justifyContent: 'flex-end' }}>
@@ -87,6 +93,9 @@ export default function App() {
         } />
         <Route path="browse" element={<BrowseToursPage />} />
         <Route path="browse/:id" element={<PublicTourDetailPage />} />
+        <Route path="simulator" element={
+          user?.role === 'tourist' ? <SimulatorPage /> : <Navigate to="/browse" replace />
+        } />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
       <Route path="*" element={<Navigate to="/login" replace />} />
