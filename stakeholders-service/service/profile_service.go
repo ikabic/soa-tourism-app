@@ -27,5 +27,12 @@ func (service *ProfileService) UpdateProfile(userID uuid.UUID, request dto.Profi
 	profile.Biography = request.Biography
 	profile.Motto = request.Motto
 
+	if request.CurrentLatitude != nil {
+		profile.CurrentLatitude = request.CurrentLatitude
+	}
+	if request.CurrentLongitude != nil {
+		profile.CurrentLongitude = request.CurrentLongitude
+	}
+
 	return service.Repo.Update(profile)
 }
