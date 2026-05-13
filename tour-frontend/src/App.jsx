@@ -8,6 +8,7 @@ import TourDetailPage from './pages/TourDetailPage';
 import BrowseToursPage from './pages/BrowseToursPage';
 import PublicTourDetailPage from './pages/PublicTourDetailPage';
 import SimulatorPage from './pages/SimulatorPage';
+import RegisterPage from './pages/RegisterPage';
 
 function RequireAuth({ children }) {
   const { user } = useAuth();
@@ -78,6 +79,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
       <Route path="/" element={<RequireAuth><Layout /></RequireAuth>}>
         <Route index element={
           <Navigate to={user?.role === 'guide' ? '/my-tours' : '/browse'} replace />

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../api/tourApi';
 import { useAuth } from '../context/AuthContext';
 import { Icon, ICONS, Btn, ErrBanner } from '../components';
@@ -76,7 +76,7 @@ export default function LoginPage() {
           </Btn>
 
           <div style={{ textAlign: 'center', fontSize: 13, color: 'var(--ink-faint)', marginTop: 6 }}>
-            New here? <a href="#" onClick={(e) => e.preventDefault()}>Create an account</a>
+            New here? <Link to="/register"> Create an account </Link>
           </div>
         </form>
       </div>

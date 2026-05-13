@@ -20,6 +20,9 @@ export const api = {
   login: (username, password) =>
     req('POST', '/stakeholders/login', { username, password }),
 
+  register: (data) =>
+    req('POST', '/stakeholders/register', data),
+
   createTour: (data, token) =>
     req('POST', '/tours/tours', data, token),
 
