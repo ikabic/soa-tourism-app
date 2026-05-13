@@ -58,4 +58,10 @@ export const api = {
 
   addDuration: (tourId, data, token) =>
     req('POST', `/tours/tours/${tourId}/durations`, data, token),
+
+  getAllUsers: (token) =>
+    req('GET', '/stakeholders/admin/users', undefined, token),
+
+   blockUser: (id, token) =>
+    req('PUT', `/stakeholders/admin/users/${id}/block`, null, token),
 };

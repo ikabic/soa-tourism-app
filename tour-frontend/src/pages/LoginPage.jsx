@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../api/tourApi';
 import { useAuth } from '../context/AuthContext';
@@ -12,10 +12,11 @@ export default function LoginPage() {
   const { login, user } = useAuth();
   const navigate = useNavigate();
 
+  useEffect(() => {
   if (user) {
-    navigate(user.role === 'guide' ? '/my-tours' : '/browse', { replace: true });
-    return null;
+    navigate(user.role === 'guide' ? '/my-tours' : user.role === 'admin' ? '/admin/users' : '/browse', { replace: true });
   }
+}, [user, navigate]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -27,7 +28,7 @@ export default function LoginPage() {
       const { token } = await api.login(username.trim(), password);
       login(token);
       const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
-      navigate(payload.role === 'guide' ? '/my-tours' : '/browse', { replace: true });
+      navigate(payload.role === 'guide' ? '/my-tours' : payload.role === 'admin' ? '/admin/users' : '/browse', { replace: true });
     } catch (e) {
       setErr(e.message || 'Invalid credentials.');
     } finally {

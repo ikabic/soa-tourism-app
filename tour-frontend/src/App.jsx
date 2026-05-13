@@ -9,6 +9,7 @@ import BrowseToursPage from './pages/BrowseToursPage';
 import PublicTourDetailPage from './pages/PublicTourDetailPage';
 import SimulatorPage from './pages/SimulatorPage';
 import RegisterPage from './pages/RegisterPage';
+import AdminUsersPage from './pages/AdminUsersPage';
 
 function RequireAuth({ children }) {
   const { user } = useAuth();
@@ -18,7 +19,7 @@ function RequireAuth({ children }) {
 function Nav() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const initials = user?.role === 'guide' ? 'G' : user?.role === 'tourist' ? 'T' : '?';
+  const initials = user?.role === 'guide' ? 'G' : user?.role === 'tourist' ? 'T' : user?.role === 'admin' ? 'A' : '?';
 
   return (
     <nav className="nav">
@@ -42,11 +43,17 @@ function Nav() {
               <NavLink to="/browse" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
                 Browse tours
               </NavLink>
+              {user?.role === 'admin' && (
+                <NavLink to="/admin/users" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+                  Users
+                </NavLink>
+               )}
               <NavLink to="/simulator" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
                 Simulator
               </NavLink>
             </>
           )}
+         
         </div>
         <div className="nav-right" style={{ flex: 1, justifyContent: 'flex-end' }}>
           <div className="nav-user">
@@ -82,7 +89,7 @@ export default function App() {
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/" element={<RequireAuth><Layout /></RequireAuth>}>
         <Route index element={
-          <Navigate to={user?.role === 'guide' ? '/my-tours' : '/browse'} replace />
+          <Navigate to={user?.role === 'guide' ? '/my-tours' : user?.role === 'admin' ? '/admin/users'  : '/browse'} replace />
         } />
         <Route path="my-tours" element={
           user?.role === 'guide' ? <MyToursPage /> : <Navigate to="/browse" replace />
@@ -97,6 +104,9 @@ export default function App() {
         <Route path="browse/:id" element={<PublicTourDetailPage />} />
         <Route path="simulator" element={
           user?.role === 'tourist' ? <SimulatorPage /> : <Navigate to="/browse" replace />
+        } />
+        <Route path="admin/users" element={
+          user?.role === 'admin' ? <AdminUsersPage /> : <Navigate to="/" replace />
         } />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
