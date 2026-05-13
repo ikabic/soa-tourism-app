@@ -43,15 +43,15 @@ function Nav() {
               <NavLink to="/browse" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
                 Browse tours
               </NavLink>
-              {user?.role === 'admin' && (
-                <NavLink to="/admin/users" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
-                  Users
-                </NavLink>
-               )}
               <NavLink to="/simulator" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
                 Simulator
               </NavLink>
             </>
+          )}
+          {user?.role === 'admin' && (
+                <NavLink to="/admin/users" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+                  Users
+                </NavLink>
           )}
          
         </div>
