@@ -96,5 +96,7 @@ func main() {
 	userHandler := &handler.UserHandler{Service: userService}
 	profileHandler := &handler.ProfileHandler{Service: profileService}
 
+	go grpcclient.StartGRPCServer(userRepo)
+
 	startServer(userHandler, profileHandler)
 }

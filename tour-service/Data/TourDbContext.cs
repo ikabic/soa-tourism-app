@@ -8,6 +8,7 @@ public class TourDbContext(DbContextOptions<TourDbContext> options) : DbContext(
     public DbSet<Tour> Tours => Set<Tour>();
     public DbSet<KeyPoint> KeyPoints => Set<KeyPoint>();
     public DbSet<TourDuration> TourDurations => Set<TourDuration>();
+    public DbSet<Review> Reviews => Set<Review>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -38,5 +39,15 @@ public class TourDbContext(DbContextOptions<TourDbContext> options) : DbContext(
             .WithMany(t => t.Durations)
             .HasForeignKey(d => d.TourId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Review>()
+            .HasOne(r => r.Tour)
+            .WithMany()
+            .HasForeignKey(r => r.TourId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Review>()
+            .Property(r => r.ImageBase64s)
+            .HasColumnType("text[]");
     }
 }

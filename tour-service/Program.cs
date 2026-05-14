@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using TourService.Clients;
 using TourService.Data;
 using TourService.Middleware;
@@ -16,7 +17,8 @@ var dbPassword = Environment.GetEnvironmentVariable("DB_PASSWORD") ?? "postgres"
 var connectionString = $"Host={dbHost};Port={dbPort};Database={dbName};Username={dbUser};Password={dbPassword}";
 
 builder.Services.AddDbContext<TourDbContext>(options =>
-    options.UseNpgsql(connectionString));
+    options.UseNpgsql(connectionString)
+           .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning)));
 
 builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
     p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
@@ -31,12 +33,37 @@ builder.Services.AddHttpClient<IPurchaseClient, PurchaseClient>(c =>
 builder.Services.AddScoped<ITourRepository, TourRepository>();
 builder.Services.AddScoped<ITourService, TourService.Services.TourService>();
 
+builder.Services.AddGrpcClient<TourService.Grpc.UserService.UserServiceClient>(o =>
+{
+    o.Address = new Uri(Environment.GetEnvironmentVariable("STAKEHOLDERS_GRPC_ADDR") ?? "http://stakeholders-app:50051");
+});
+builder.Services.AddSingleton<IStakeholdersClient, StakeholdersGrpcClient>();
+builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
+builder.Services.AddScoped<IReviewService, ReviewService>();
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<TourDbContext>();
     db.Database.Migrate();
+
+    db.Database.ExecuteSqlRaw(@"
+        CREATE TABLE IF NOT EXISTS ""Reviews"" (
+            ""Id"" uuid NOT NULL,
+            ""TourId"" uuid NOT NULL,
+            ""TouristId"" text NOT NULL,
+            ""TouristUsername"" text NOT NULL,
+            ""TouristEmail"" text NOT NULL,
+            ""Rating"" integer NOT NULL,
+            ""Comment"" text NOT NULL,
+            ""VisitedAt"" timestamp with time zone NOT NULL,
+            ""CreatedAt"" timestamp with time zone NOT NULL,
+            ""ImageBase64s"" text[] NOT NULL,
+            CONSTRAINT ""PK_Reviews"" PRIMARY KEY (""Id""),
+            CONSTRAINT ""FK_Reviews_Tours_TourId"" FOREIGN KEY (""TourId"") REFERENCES ""Tours"" (""Id"") ON DELETE CASCADE
+        );
+    ");
 }
 
 app.UseCors();
