@@ -39,13 +39,14 @@ export function Icon({ d, size = 18, stroke = 1.5, fill = 'none', style }) {
   );
 }
 
-export function Btn({ children, variant = 'primary', size, icon, iconRight, ariaLabel, iconOnly, onClick, disabled, type = 'button', style }) {
+export function Btn({ children, variant = 'primary', size, icon, iconRight, ariaLabel, iconOnly, onClick, disabled, type = 'button', style, title }) {
   const classes = ['btn', `btn-${variant}`];
   if (size === 'sm') classes.push('btn-sm');
   if (size === 'lg') classes.push('btn-lg');
   if (iconOnly) classes.push('btn-icon');
   return (
     <button
+      title={title}
       type={type}
       onClick={onClick}
       disabled={disabled}

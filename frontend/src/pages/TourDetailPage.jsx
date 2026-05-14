@@ -17,6 +17,15 @@ function makeKpIcon(index, isFirst) {
   });
 }
 
+function makeEditIcon(index) {
+  return L.divIcon({
+    html: `<div class="kp-marker kp-marker-editing"><span>${index + 1}</span></div>`,
+    className: '',
+    iconSize: [28, 28],
+    iconAnchor: [14, 28],
+  });
+}
+
 function makePendingIcon() {
   return L.divIcon({
     html: `<div class="kp-marker" style="background:var(--gold)"><span>+</span></div>`,
@@ -54,6 +63,11 @@ export default function TourDetailPage() {
   const [durForm, setDurForm] = useState({ transportType: 'Walking', durationInMinutes: 60 });
   const [draftForm, setDraftForm] = useState({ name: '', description: '', difficulty: 'Medium', tagsRaw: '', price: 0 });
   const [showDraftEditor, setShowDraftEditor] = useState(false);
+
+  const [editingKp, setEditingKp] = useState(null);
+  const [editForm, setEditForm] = useState({ name: '', description: '', imageUrl: '' });
+  const [editPendingPin, setEditPendingPin] = useState(null);
+  const [editReposition, setEditReposition] = useState(false);
 
   const { data: tour, isLoading, error: loadErr } = useQuery({
     queryKey: ['tour', id],
@@ -108,6 +122,24 @@ export default function TourDetailPage() {
     },
     onError: (e) => setErr(e.message),
   });
+  const updateKpMut = useMutation({
+    mutationFn: ({ kpId, data }) => api.updateKeyPoint(id, kpId, data, token),
+    onSuccess: () => {
+      invalidate();
+      setEditingKp(null);
+      setEditPendingPin(null);
+      setEditReposition(false);
+    },
+    onError: (e) => setErr(e.message),
+  });
+  const deleteKpMut = useMutation({
+    mutationFn: (kpId) => api.deleteKeyPoint(id, kpId, token),
+    onSuccess: () => {
+      invalidate();
+      if (editingKp) { setEditingKp(null); setEditPendingPin(null); setEditReposition(false); }
+    },
+    onError: (e) => setErr(e.message),
+  });
   const durMut = useMutation({
     mutationFn: (data) => api.addDuration(id, data, token),
     onSuccess: () => {
@@ -142,6 +174,49 @@ export default function TourDetailPage() {
       longitude: pendingPin.lng,
       imageUrl: kpForm.imageUrl.trim() || null,
     });
+  };
+
+  const openEditKp = (kp) => {
+    setPendingPin(null);
+    setEditingKp(kp);
+    setEditForm({ name: kp.name, description: kp.description || '', imageUrl: kp.imageUrl || '' });
+    setEditPendingPin(null);
+    setEditReposition(false);
+  };
+
+  const cancelEdit = () => {
+    setEditingKp(null);
+    setEditPendingPin(null);
+    setEditReposition(false);
+  };
+
+  const saveEditKp = () => {
+    if (!editForm.name.trim()) { setErr('Name is required.'); return; }
+    setErr(null);
+    const coords = editPendingPin
+      ? { latitude: editPendingPin.lat, longitude: editPendingPin.lng }
+      : { latitude: editingKp.latitude, longitude: editingKp.longitude };
+    updateKpMut.mutate({
+      kpId: editingKp.id,
+      data: {
+        name: editForm.name.trim(),
+        description: editForm.description.trim(),
+        imageUrl: editForm.imageUrl.trim() || null,
+        ...coords,
+      },
+    });
+  };
+
+  const handleMapClick = (latlng) => {
+    if (editReposition) {
+      setEditPendingPin({ lat: latlng.lat, lng: latlng.lng });
+      setEditReposition(false);
+      return;
+    }
+    if (!editingKp) {
+      setPendingPin({ lat: latlng.lat, lng: latlng.lng });
+      setKpForm({ name: '', description: '', imageUrl: '' });
+    }
   };
 
   const addDuration = () => {
@@ -230,7 +305,7 @@ export default function TourDetailPage() {
           <span className="faint" style={{ fontSize: 11.5, textAlign: 'center', marginTop: 4 }}>
             {tour.status === 'Published' ? `Live since ${formatDate(tour.publishedAt)}`
               : tour.status === 'Archived' ? `Archived ${formatDate(tour.archivedAt)}`
-              : 'Not visible to travellers'}
+                : 'Not visible to travellers'}
           </span>
         </div>
       </div>
@@ -345,29 +420,22 @@ export default function TourDetailPage() {
                 attribution="© OpenStreetMap · © CARTO"
                 maxZoom={19}
               />
-              <MapClickHandler onMapClick={(latlng) => {
-                setPendingPin({ lat: latlng.lat, lng: latlng.lng });
-                setKpForm({ name: '', description: '', imageUrl: '' });
-              }} />
+              <MapClickHandler onMapClick={handleMapClick} />
               {keyPoints.length > 0 && <FitBounds keyPoints={keyPoints} />}
-              {keyPoints.map((kp, i) => (
-                <Marker key={kp.id} position={[kp.latitude, kp.longitude]} icon={makeKpIcon(i, i === 0)}>
-                  <Popup>
-                    <div style={{ minWidth: 180 }}>
-                      <div style={{ fontFamily: 'var(--serif)', fontSize: 15, color: 'var(--sage-darker)', marginBottom: 4 }}>{kp.name}</div>
-                      <div style={{ fontSize: 12.5, color: 'var(--ink-soft)', lineHeight: 1.4 }}>{kp.description}</div>
-                    </div>
-                  </Popup>
+              {keyPoints.map((kp, i) => {
+                const isEditing = editingKp?.id === kp.id;
+                const pos = isEditing && editPendingPin ? [editPendingPin.lat, editPendingPin.lng] : [kp.latitude, kp.longitude];
+                return <Marker key={kp.id} position={pos} icon={isEditing ? makeEditIcon(i) : makeKpIcon(i, i === 0)} eventHandlers={{ click: () => openEditKp(kp) }}>
                   <Tooltip direction="top" offset={[0, -24]} opacity={0.95}>{kp.name}</Tooltip>
-                </Marker>
-              ))}
-              {pendingPin && (
+                </Marker>;
+              })}
+              {pendingPin && !editingKp && (
                 <Marker position={[pendingPin.lat, pendingPin.lng]} icon={makePendingIcon()} />
               )}
             </MapContainer>
           </div>
 
-          {pendingPin && (
+          {pendingPin && !editingKp && (
             <div className="card-warm card p-16 fade-up" style={{ marginTop: 14 }}>
               <div className="row between" style={{ marginBottom: 10 }}>
                 <h4>New key point</h4>
@@ -400,6 +468,54 @@ export default function TourDetailPage() {
               </div>
             </div>
           )}
+
+          {editingKp && (
+            <div className="card p-16 fade-up" style={{ marginTop: 14, borderLeft: '3px solid var(--terracotta)' }}>
+              <div className="row between" style={{ marginBottom: 10 }}>
+                <h4>Edit key point</h4>
+                <span className="faint" style={{ fontSize: 12 }}>
+                  {editPendingPin ? `${editPendingPin.lat.toFixed(4)}°, ${editPendingPin.lng.toFixed(4)}° (new)` : `${editingKp.latitude.toFixed(4)}°, ${editingKp.longitude.toFixed(4)}°`}
+                </span>
+              </div>
+              <div className="col gap-12">
+                <div className="field">
+                  <label className="field-label">Name</label>
+                  <input className="input" value={editForm.name}
+                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
+                </div>
+                <div className="field">
+                  <label className="field-label">Description</label>
+                  <textarea className="textarea" rows={2} value={editForm.description}
+                    onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} />
+                </div>
+                <div className="field">
+                  <label className="field-label">Image URL (optional)</label>
+                  <input className="input" placeholder="https://…" value={editForm.imageUrl}
+                    onChange={(e) => setEditForm({ ...editForm, imageUrl: e.target.value })} />
+                </div>
+
+                <div className="field">
+                  <label className="field-label">Position</label>
+                  <div className="row gap-8" style={{ alignItems: 'center' }}>
+                    <Btn variant="ghost" size="sm"
+                      onClick={() => { setEditReposition(true); }}
+                      disabled={editReposition}
+                      icon={editReposition ? 'clock' : 'pin'}>
+                      {editReposition ? 'Click on the map…' : 'Reposition'}
+                    </Btn>
+                    {editPendingPin && <Btn variant="ghost" size="sm" onClick={() => setEditPendingPin(null)}>Reset</Btn>}
+                  </div>
+                </div>
+
+                <div className="row gap-8" style={{ justifyContent: 'flex-end' }}>
+                  <Btn variant="ghost" size="sm" onClick={cancelEdit}>Cancel</Btn>
+                  <Btn variant="primary" size="sm" onClick={saveEditKp} disabled={updateKpMut.isPending}>
+                    {updateKpMut.isPending ? 'Saving…' : 'Save changes'}
+                  </Btn>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right panel */}
@@ -420,7 +536,7 @@ export default function TourDetailPage() {
               <ol style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 0 }}>
                 {keyPoints.map((kp, i, arr) => (
                   <li key={kp.id} style={{
-                    display: 'grid', gridTemplateColumns: '32px 1fr', gap: 12,
+                    display: 'grid', gridTemplateColumns: '32px 1fr 42px', gap: 12,
                     padding: '10px 0',
                     borderTop: i === 0 ? 'none' : '0.5px dashed var(--sage-line)',
                   }}>
@@ -444,6 +560,11 @@ export default function TourDetailPage() {
                         <img src={kp.imageUrl} alt={kp.name}
                           style={{ width: '100%', borderRadius: 8, marginTop: 8, objectFit: 'cover', maxHeight: 160 }} />
                       )}
+                    </div>
+                    <div>
+                      <Btn variant="ghost" icon='trash' size="sm" onClick={cancelEdit} title="Delete key point"
+                          onClick={() => { if (window.confirm(`Delete "${kp.name}"?`)) deleteKpMut.mutate(kp.id); }}
+                          disabled={deleteKpMut.isPending} />
                     </div>
                   </li>
                 ))}

@@ -60,6 +60,12 @@ export const api = {
   addKeyPoint: (tourId, data, token) =>
     req('POST', `/tours/tours/${tourId}/keypoints`, data, token),
 
+  updateKeyPoint: (tourId, keypointId, data, token) =>
+    req('PUT', `/tours/tours/${tourId}/keypoints/${keypointId}`, data, token),
+
+  deleteKeyPoint: (tourId, keypointId, token) =>
+    req('DELETE', `/tours/tours/${tourId}/keypoints/${keypointId}`, undefined, token),
+
   getKeyPoints: (tourId, token) =>
     req('GET', `/tours/tours/${tourId}/keypoints`, undefined, token),
 
