@@ -66,9 +66,10 @@ func (service *UserService) Login(request dto.LoginRequest) (string, error) {
 	}
 
 	claims := jwt.MapClaims{
-		"userId": user.ID.String(),
-		"role":   user.Role,
-		"exp":    time.Now().Add(time.Hour * 24).Unix(),
+		"userId":   user.ID.String(),
+		"username": user.Username,
+		"role":     user.Role,
+		"exp":      time.Now().Add(time.Hour * 24).Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

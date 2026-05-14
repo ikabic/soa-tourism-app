@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"log"
 	"os"
@@ -49,6 +50,10 @@ func initDatabase() *gorm.DB {
 	return database
 }
 
+func ensureUploadDirs() {
+	os.MkdirAll(filepath.Join("uploads", "avatars"), os.ModePerm)
+}
+
 func startServer(userHandler *handler.UserHandler, profileHandler *handler.ProfileHandler) {
 	router := mux.NewRouter().StrictSlash(true)
 
@@ -58,10 +63,14 @@ func startServer(userHandler *handler.UserHandler, profileHandler *handler.Profi
 	router.Handle("/admin/users", middleware.AuthMiddleware(middleware.AdminOnly(http.HandlerFunc(userHandler.GetAllUsers)))).Methods("GET")
 	router.Handle("/admin/users/{id}/block", middleware.AuthMiddleware(middleware.AdminOnly(http.HandlerFunc(userHandler.BlockUser)))).Methods("PUT")
 
+	router.HandleFunc("/profile/{username}", profileHandler.GetProfile).Methods("GET")
+	router.HandleFunc("/profiles", profileHandler.GetProfiles).Methods("GET")
+
 	protected := router.PathPrefix("/profile").Subrouter()
 	protected.Use(middleware.AuthMiddleware)
-	protected.HandleFunc("", profileHandler.GetProfile).Methods("GET")
 	protected.HandleFunc("", profileHandler.UpdateProfile).Methods("PUT")
+
+	router.PathPrefix("/uploads/").Handler(http.StripPrefix("/uploads/", http.FileServer(http.Dir("uploads"))))
 
 	router.PathPrefix("/").Handler(http.FileServer(http.Dir("./static")))
 	println("Server starting...")
