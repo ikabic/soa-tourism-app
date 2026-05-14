@@ -1,8 +1,12 @@
 syntax = "proto3";
+
 option go_package = "proto/follow";
+option java_package = "follow";
+option java_outer_classname = "FollowServiceProto";
 
 service FollowService {
   rpc GetFollowRelationships (FollowRelationshipsRequest) returns (FollowRelationshipsResponse);
+  rpc IsFollowing (IsFollowingRequest) returns (IsFollowingResponse);
 }
 
 message FollowRelationshipsRequest {
@@ -12,4 +16,13 @@ message FollowRelationshipsRequest {
 message FollowRelationshipsResponse {
   repeated string follower_ids  = 1;
   repeated string following_ids = 2;
+}
+
+message IsFollowingRequest {
+  string follower_id = 1;
+  string followed_id = 2;
+}
+
+message IsFollowingResponse {
+  bool is_following = 1;
 }
