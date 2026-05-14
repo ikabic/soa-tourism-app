@@ -2,11 +2,15 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { MapContainer, TileLayer, Marker, Popup, Tooltip, useMapEvents, useMap } from 'react-leaflet';
-import L from 'leaflet';
 import { api } from '../api/tourApi';
 import { useAuth } from '../context/AuthContext';
 import { Btn, StatusBadge, Difficulty, Tag, TransportPill, ErrBanner, Icon, ICONS } from '../components';
 import { formatDate } from '../utils/helpers';
+
+import L from 'leaflet';
+import 'leaflet-routing-machine';
+import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
+import DeleteModal from '../components/DeleteModal';
 
 function makeKpIcon(index, isFirst) {
   return L.divIcon({
@@ -51,6 +55,45 @@ function FitBounds({ keyPoints }) {
   return null;
 }
 
+function RouteLayer({ keyPoints }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (keyPoints.length < 2) return;
+
+    const waypoints = keyPoints.map((kp) =>
+      L.latLng(kp.latitude, kp.longitude)
+    );
+
+    const control = L.Routing.control({
+      waypoints,
+      routeWhileDragging: false,
+      addWaypoints: false,
+      draggableWaypoints: false,
+      fitSelectedRoutes: false,
+      show: false,
+      lineOptions: { styles: [{ color: '#5a7a5a', weight: 3, opacity: 0.7 }], },
+      createMarker: () => null,
+    });
+
+    const orig = control._clearLines.bind(control);
+    control._clearLines = function () {
+      if (this._map) orig();
+    };
+
+    control.addTo(map);
+
+    return () => {
+      try { control.getPlan().setWaypoints([]); } catch (_) {}
+      try { map.removeControl(control); } catch (_) {}
+    };
+
+    return () => { map.removeControl(control) };
+  }, [keyPoints.map((k) => `${k.id}-${k.latitude}-${k.longitude}`).join(',')]);
+
+  return null;
+}
+
 export default function TourDetailPage() {
   const { id } = useParams();
   const { token } = useAuth();
@@ -68,6 +111,8 @@ export default function TourDetailPage() {
   const [editForm, setEditForm] = useState({ name: '', description: '', imageUrl: '' });
   const [editPendingPin, setEditPendingPin] = useState(null);
   const [editReposition, setEditReposition] = useState(false);
+
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const { data: tour, isLoading, error: loadErr } = useQuery({
     queryKey: ['tour', id],
@@ -177,6 +222,8 @@ export default function TourDetailPage() {
   };
 
   const openEditKp = (kp) => {
+    if (tour.status !== 'Draft') return;
+
     setPendingPin(null);
     setEditingKp(kp);
     setEditForm({ name: kp.name, description: kp.description || '', imageUrl: kp.imageUrl || '' });
@@ -208,6 +255,8 @@ export default function TourDetailPage() {
   };
 
   const handleMapClick = (latlng) => {
+    if (tour.status !== 'Draft') return;
+
     if (editReposition) {
       setEditPendingPin({ lat: latlng.lat, lng: latlng.lng });
       setEditReposition(false);
@@ -422,6 +471,7 @@ export default function TourDetailPage() {
               />
               <MapClickHandler onMapClick={handleMapClick} />
               {keyPoints.length > 0 && <FitBounds keyPoints={keyPoints} />}
+              {keyPoints.length > 1 && <RouteLayer keyPoints={keyPoints} />}
               {keyPoints.map((kp, i) => {
                 const isEditing = editingKp?.id === kp.id;
                 const pos = isEditing && editPendingPin ? [editPendingPin.lat, editPendingPin.lng] : [kp.latitude, kp.longitude];
@@ -435,7 +485,7 @@ export default function TourDetailPage() {
             </MapContainer>
           </div>
 
-          {pendingPin && !editingKp && (
+          {pendingPin && !editingKp && tour.status === 'Draft' && (
             <div className="card-warm card p-16 fade-up" style={{ marginTop: 14 }}>
               <div className="row between" style={{ marginBottom: 10 }}>
                 <h4>New key point</h4>
@@ -561,11 +611,11 @@ export default function TourDetailPage() {
                           style={{ width: '100%', borderRadius: 8, marginTop: 8, objectFit: 'cover', maxHeight: 160 }} />
                       )}
                     </div>
-                    <div>
-                      <Btn variant="ghost" icon='trash' size="sm" onClick={cancelEdit} title="Delete key point"
-                          onClick={() => { if (window.confirm(`Delete "${kp.name}"?`)) deleteKpMut.mutate(kp.id); }}
-                          disabled={deleteKpMut.isPending} />
-                    </div>
+                    {tour.status === 'Draft' && <div>
+                      <Btn variant="ghost" icon='trash' size="sm" title="Delete key point"
+                        onClick={() => setDeleteTarget({ id: kp.id, name: kp.name })}
+                        disabled={deleteKpMut.isPending} />
+                    </div>}
                   </li>
                 ))}
               </ol>
@@ -618,6 +668,14 @@ export default function TourDetailPage() {
           </div>
         </div>
       </div>
+
+      {deleteTarget && <DeleteModal title="Delete key point" message={`Delete "${deleteTarget.name}"? This cannot be undone.`} isPending={deleteKpMut.isPending}
+        onConfirm={() => {
+          deleteKpMut.mutate(deleteTarget.id);
+          setDeleteTarget(null);
+        }}
+        onClose={() => setDeleteTarget(null)} />
+      }
     </div>
   );
 }
