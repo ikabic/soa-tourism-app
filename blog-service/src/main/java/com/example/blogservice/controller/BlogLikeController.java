@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -28,6 +29,18 @@ public class BlogLikeController {
         }
         blogLikeService.likePost(blogId, userId);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
+    @GetMapping
+    public ResponseEntity<Map<String, Boolean>> getLikeStatus(
+            @PathVariable("blogId") UUID blogId,
+            HttpServletRequest httpRequest) {
+        String userId = (String) httpRequest.getAttribute("userId");
+        if (userId == null || userId.isBlank()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        boolean liked = blogLikeService.hasLiked(blogId, userId);
+        return ResponseEntity.ok(Map.of("liked", liked));
     }
 
     @DeleteMapping

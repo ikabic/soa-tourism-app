@@ -7,6 +7,8 @@ import CreateTourPage from './pages/CreateTourPage';
 import TourDetailPage from './pages/TourDetailPage';
 import BrowseToursPage from './pages/BrowseToursPage';
 import PublicTourDetailPage from './pages/PublicTourDetailPage';
+import BlogsPage from './pages/BlogsPage';
+import BlogDetailPage from './pages/BlogDetailPage';
 import ProfilePage from './pages/ProfilePage';
 import CartPage from './pages/CartPage';
 import PurchasedToursPage from './pages/PurchasedToursPage';
@@ -59,7 +61,9 @@ function Nav() {
                   Users
                 </NavLink>
           )}
-         
+          <NavLink to="/blogs" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+            Blog
+          </NavLink>
         </div>
         <div className="nav-right" style={{ flex: 1, justifyContent: 'flex-end' }}>
           {user?.role === 'tourist' && (
@@ -112,6 +116,8 @@ export default function App() {
 
         <Route path="browse" element={<BrowseToursPage />} />
         <Route path="browse/:id" element={<PublicTourDetailPage />} />
+        <Route path="blogs" element={<BlogsPage />} />
+        <Route path="blogs/:id" element={<BlogDetailPage />} />
         <Route path="cart" element={
           user?.role === 'tourist' ? <CartPage /> : <Navigate to="/browse" replace />
         } />

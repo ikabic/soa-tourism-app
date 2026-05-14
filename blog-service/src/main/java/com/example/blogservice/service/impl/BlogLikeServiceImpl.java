@@ -57,4 +57,9 @@ public class BlogLikeServiceImpl implements BlogLikeService {
         blogPost.setLikesCount(Math.max(0, blogPost.getLikesCount() - 1));
         blogPostRepository.save(blogPost);
     }
+
+    @Override
+    public boolean hasLiked(UUID blogPostId, String userId) {
+        return blogLikeRepository.existsByBlogPostIdAndUserId(blogPostId, userId);
+    }
 }

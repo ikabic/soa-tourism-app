@@ -72,7 +72,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String method = request.getMethod();
-        if (!"POST".equalsIgnoreCase(method) && !"DELETE".equalsIgnoreCase(method)) {
+        boolean isLikeStatusRequest = "GET".equalsIgnoreCase(method)
+                && request.getRequestURI().matches("^/blogs/[^/]+/like$");
+        if (!"POST".equalsIgnoreCase(method) && !"DELETE".equalsIgnoreCase(method) && !isLikeStatusRequest) {
             filterChain.doFilter(request, response);
             return;
         }
