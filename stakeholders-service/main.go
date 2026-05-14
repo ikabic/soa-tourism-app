@@ -13,7 +13,7 @@ import (
 	"github.com/gorilla/mux"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"stakeholders-service.xws.com/grpcserver"
+	grpcclient "stakeholders-service.xws.com/grpc"
 	"stakeholders-service.xws.com/handler"
 	"stakeholders-service.xws.com/middleware"
 	"stakeholders-service.xws.com/model"
@@ -23,12 +23,12 @@ import (
 
 func initDatabase() *gorm.DB {
 	godotenv.Load()
-	
-	log.Printf("DB_HOST=%s, DB_USER=%s, DB_NAME=%s", 
-		os.Getenv("DB_HOST"), 
-		os.Getenv("DB_USER"), 
+
+	log.Printf("DB_HOST=%s, DB_USER=%s, DB_NAME=%s",
+		os.Getenv("DB_HOST"),
+		os.Getenv("DB_USER"),
 		os.Getenv("DB_NAME"))
-	
+
 	connection_url := fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		os.Getenv("DB_HOST"),
@@ -74,15 +74,18 @@ func main() {
 		log.Fatal("Failed to connect to database")
 	}
 
+	ensureUploadDirs()
+
+	followClient := grpcclient.NewFollowClient(os.Getenv("FOLLOWERS_GRPC_ADDR"))
+
 	userRepo := &repo.UserRepository{DB: database}
 	profileRepo := &repo.ProfileRepository{DB: database}
 
 	userService := &service.UserService{Repo: userRepo}
-	profileService := &service.ProfileService{Repo: profileRepo}
+	profileService := &service.ProfileService{Repo: profileRepo, FollowClient: followClient}
 
 	userHandler := &handler.UserHandler{Service: userService}
 	profileHandler := &handler.ProfileHandler{Service: profileService}
 
-	go grpcserver.StartGRPCServer(userRepo)
 	startServer(userHandler, profileHandler)
 }
