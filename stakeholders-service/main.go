@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"log"
 	"os"
@@ -13,7 +14,7 @@ import (
 	"github.com/gorilla/mux"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"stakeholders-service.xws.com/grpcserver"
+	grpcclient "stakeholders-service.xws.com/grpc"
 	"stakeholders-service.xws.com/handler"
 	"stakeholders-service.xws.com/middleware"
 	"stakeholders-service.xws.com/model"
@@ -23,12 +24,12 @@ import (
 
 func initDatabase() *gorm.DB {
 	godotenv.Load()
-	
-	log.Printf("DB_HOST=%s, DB_USER=%s, DB_NAME=%s", 
-		os.Getenv("DB_HOST"), 
-		os.Getenv("DB_USER"), 
+
+	log.Printf("DB_HOST=%s, DB_USER=%s, DB_NAME=%s",
+		os.Getenv("DB_HOST"),
+		os.Getenv("DB_USER"),
 		os.Getenv("DB_NAME"))
-	
+
 	connection_url := fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		os.Getenv("DB_HOST"),
@@ -49,6 +50,10 @@ func initDatabase() *gorm.DB {
 	return database
 }
 
+func ensureUploadDirs() {
+	os.MkdirAll(filepath.Join("uploads", "avatars"), os.ModePerm)
+}
+
 func startServer(userHandler *handler.UserHandler, profileHandler *handler.ProfileHandler) {
 	router := mux.NewRouter().StrictSlash(true)
 
@@ -58,10 +63,14 @@ func startServer(userHandler *handler.UserHandler, profileHandler *handler.Profi
 	router.Handle("/admin/users", middleware.AuthMiddleware(middleware.AdminOnly(http.HandlerFunc(userHandler.GetAllUsers)))).Methods("GET")
 	router.Handle("/admin/users/{id}/block", middleware.AuthMiddleware(middleware.AdminOnly(http.HandlerFunc(userHandler.BlockUser)))).Methods("PUT")
 
+	router.HandleFunc("/profile/{username}", profileHandler.GetProfile).Methods("GET")
+	router.HandleFunc("/profiles", profileHandler.GetProfiles).Methods("GET")
+
 	protected := router.PathPrefix("/profile").Subrouter()
 	protected.Use(middleware.AuthMiddleware)
-	protected.HandleFunc("", profileHandler.GetProfile).Methods("GET")
 	protected.HandleFunc("", profileHandler.UpdateProfile).Methods("PUT")
+
+	router.PathPrefix("/uploads/").Handler(http.StripPrefix("/uploads/", http.FileServer(http.Dir("uploads"))))
 
 	router.PathPrefix("/").Handler(http.FileServer(http.Dir("./static")))
 	println("Server starting...")
@@ -74,15 +83,18 @@ func main() {
 		log.Fatal("Failed to connect to database")
 	}
 
+	ensureUploadDirs()
+
+	followClient := grpcclient.NewFollowClient(os.Getenv("FOLLOWERS_GRPC_ADDR"))
+
 	userRepo := &repo.UserRepository{DB: database}
 	profileRepo := &repo.ProfileRepository{DB: database}
 
 	userService := &service.UserService{Repo: userRepo}
-	profileService := &service.ProfileService{Repo: profileRepo}
+	profileService := &service.ProfileService{Repo: profileRepo, FollowClient: followClient}
 
 	userHandler := &handler.UserHandler{Service: userService}
 	profileHandler := &handler.ProfileHandler{Service: profileService}
 
-	go grpcserver.StartGRPCServer(userRepo)
 	startServer(userHandler, profileHandler)
 }

@@ -14,9 +14,14 @@ services:
       DB_NAME: ${STAKEHOLDERS_DB_NAME:-stakeholders}
       DB_SSLMODE: disable
       JWT_SECRET: ${JWT_SECRET}
+      FOLLOWERS_GRPC_ADDR: followers-app:50051
     depends_on:
+      followers-app:
+        condition: service_started
       stakeholders-db:
         condition: service_healthy
+    volumes:
+      - ./stakeholders-service/uploads:/app/stakeholders-service/uploads
 
   stakeholders-db:
     container_name: stakeholders-db
@@ -187,7 +192,7 @@ services:
       NEO4J_USER: ${NEO4J_USER:-neo4j}
       NEO4J_PASSWORD: ${NEO4J_PASSWORD:-password123}
       JWT_SECRET: ${JWT_SECRET}
-      STAKEHOLDERS_GRPC_ADDR: stakeholders-app:50051
+      GRPC_PORT: 50051
     depends_on:
       followers-db:
         condition: service_healthy

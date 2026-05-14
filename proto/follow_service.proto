@@ -1,0 +1,15 @@
+syntax = "proto3";
+option go_package = "proto/follow";
+
+service FollowService {
+  rpc GetFollowRelationships (FollowRelationshipsRequest) returns (FollowRelationshipsResponse);
+}
+
+message FollowRelationshipsRequest {
+  string user_id = 1;
+}
+
+message FollowRelationshipsResponse {
+  repeated string follower_ids  = 1;
+  repeated string following_ids = 2;
+}
