@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '../api/tourApi';
+import { api } from '../api/stakeholdersApi';
 import { useAuth } from '../context/AuthContext';
 import { Btn, ErrBanner } from '../components';
 
@@ -11,7 +11,7 @@ function MapClickHandler({ onClick }) {
 }
 
 export default function SimulatorPage() {
-  const { token } = useAuth();
+  const { user, token } = useAuth();
   const qc = useQueryClient();
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [err, setErr] = useState(null);
@@ -19,7 +19,7 @@ export default function SimulatorPage() {
 
   const { data: profile, isLoading, error } = useQuery({
     queryKey: ['profile'],
-    queryFn: () => api.getProfile(token),
+    queryFn: () => api.getProfileByUsername(token, user.username),
     enabled: Boolean(token),
   });
 

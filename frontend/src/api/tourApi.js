@@ -45,12 +45,6 @@ export const api = {
   updateTour: (id, data, token) =>
     req('PUT', `/tours/tours/${id}`, data, token),
 
-  getProfile: (token) =>
-    req('GET', '/stakeholders/profile', undefined, token),
-
-  updateProfile: (data, token) =>
-    req('PUT', '/stakeholders/profile', data, token),
-
   archiveTour: (id, token) =>
     req('PUT', `/tours/tours/${id}/archive`, null, token),
 
