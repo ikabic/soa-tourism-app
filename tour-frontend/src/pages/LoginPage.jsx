@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { api } from '../api/stakeholdersApi';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Icon, ICONS, Btn, ErrBanner } from '../components';
 
@@ -12,10 +12,11 @@ export default function LoginPage() {
   const { login, user } = useAuth();
   const navigate = useNavigate();
 
+  useEffect(() => {
   if (user) {
-    navigate(user.role === 'guide' ? '/my-tours' : '/browse', { replace: true });
-    return null;
+    navigate(user.role === 'guide' ? '/my-tours' : user.role === 'admin' ? '/admin/users' : '/browse', { replace: true });
   }
+}, [user, navigate]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -27,7 +28,7 @@ export default function LoginPage() {
       const { token } = await api.login(username.trim(), password);
       login(token);
       const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
-      navigate(payload.role === 'guide' ? '/my-tours' : '/browse', { replace: true });
+      navigate(payload.role === 'guide' ? '/my-tours' : payload.role === 'admin' ? '/admin/users' : '/browse', { replace: true });
     } catch (e) {
       setErr(e.message || 'Invalid credentials.');
     } finally {
@@ -76,7 +77,7 @@ export default function LoginPage() {
           </Btn>
 
           <div style={{ textAlign: 'center', fontSize: 13, color: 'var(--ink-faint)', marginTop: 6 }}>
-            New here? <a href="#" onClick={(e) => e.preventDefault()}>Create an account</a>
+            New here? <Link to="/register"> Create an account </Link>
           </div>
         </form>
       </div>

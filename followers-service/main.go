@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"os"
 
-	"followers-service.xws.com/grpcclient"
+	grpcserver "followers-service.xws.com/grpc"
 	"followers-service.xws.com/handler"
 	"followers-service.xws.com/middleware"
 	"followers-service.xws.com/repo"
@@ -56,11 +56,11 @@ func main() {
 		log.Fatal("Failed to connect to database")
 	}
 
-	userClient := grpcclient.NewUserClient(os.Getenv("STAKEHOLDERS_GRPC_ADDR"))
-
 	followRepo := &repo.FollowRepository{Driver: driver}
-	followService := &service.FollowService{Repo: followRepo, UserClient: userClient}
+	followService := &service.FollowService{Repo: followRepo}
 	followHandler := &handler.FollowHandler{Service: followService}
+
+	go grpcserver.StartGRPCServer(followRepo)
 
 	startServer(followHandler)
 }

@@ -8,6 +8,11 @@ import TourDetailPage from './pages/TourDetailPage';
 import BrowseToursPage from './pages/BrowseToursPage';
 import PublicTourDetailPage from './pages/PublicTourDetailPage';
 import ProfilePage from './pages/ProfilePage';
+import CartPage from './pages/CartPage';
+import PurchasedToursPage from './pages/PurchasedToursPage';
+import SimulatorPage from './pages/SimulatorPage';
+import RegisterPage from './pages/RegisterPage';
+import AdminUsersPage from './pages/AdminUsersPage';
 
 function RequireAuth({ children }) {
   const { user } = useAuth();
@@ -17,7 +22,7 @@ function RequireAuth({ children }) {
 function Nav() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const initials = user?.role === 'guide' ? 'G' : user?.role === 'tourist' ? 'T' : '?';
+  const initials = user?.role === 'guide' ? 'G' : user?.role === 'tourist' ? 'T' : user?.role === 'admin' ? 'A' : '?';
 
   return (
     <nav className="nav">
@@ -37,12 +42,29 @@ function Nav() {
             </>
           )}
           {user?.role === 'tourist' && (
-            <NavLink to="/browse" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
-              Browse tours
-            </NavLink>
+            <>
+              <NavLink to="/browse" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+                Browse tours
+              </NavLink>
+              <NavLink to="/my-purchases" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+                My purchases
+              </NavLink>
+              <NavLink to="/simulator" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+                Simulator
+              </NavLink>
+            </>
           )}
+          {user?.role === 'admin' && (
+                <NavLink to="/admin/users" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+                  Users
+                </NavLink>
+          )}
+         
         </div>
         <div className="nav-right" style={{ flex: 1, justifyContent: 'flex-end' }}>
+          {user?.role === 'tourist' && (
+            <Btn variant="ghost" icon="cart" ariaLabel="Open cart" iconOnly onClick={() => navigate('/cart')} />
+          )}
           <div className="nav-user">
             <span className="muted" style={{ fontSize: 13 }}>{user?.username}</span>
             <div className="avatar" onClick={() => navigate(`/${user?.username}`)}>{initials}</div>
@@ -73,10 +95,10 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
-
+      <Route path="/register" element={<RegisterPage />} />
       <Route path="/" element={<RequireAuth><Layout /></RequireAuth>}>
         <Route index element={
-          <Navigate to={user?.role === 'guide' ? '/my-tours' : '/browse'} replace />
+          <Navigate to={user?.role === 'guide' ? '/my-tours' : user?.role === 'admin' ? '/admin/users'  : '/browse'} replace />
         } />
         <Route path="my-tours" element={
           user?.role === 'guide' ? <MyToursPage /> : <Navigate to="/browse" replace />
@@ -90,6 +112,19 @@ export default function App() {
 
         <Route path="browse" element={<BrowseToursPage />} />
         <Route path="browse/:id" element={<PublicTourDetailPage />} />
+        <Route path="cart" element={
+          user?.role === 'tourist' ? <CartPage /> : <Navigate to="/browse" replace />
+        } />
+        <Route path="my-purchases" element={
+          user?.role === 'tourist' ? <PurchasedToursPage /> : <Navigate to="/browse" replace />
+        } />
+        <Route path="simulator" element={
+          user?.role === 'tourist' ? <SimulatorPage /> : <Navigate to="/browse" replace />
+        } />
+        <Route path="admin/users" element={
+          user?.role === 'admin' ? <AdminUsersPage /> : <Navigate to="/" replace />
+        } />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
 
       <Route path="/" element={<RequireAuth><Layout /></RequireAuth>}>

@@ -17,6 +17,9 @@ async function req(method, path, body, token) {
 }
 
 export const api = {
+  register: (data) =>
+    req('POST', '/stakeholders/register', data),
+  
   login: (username, password) =>
     req('POST', '/stakeholders/login', { username, password }),
 

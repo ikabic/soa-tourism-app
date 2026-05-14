@@ -12,19 +12,6 @@ import ProfileAvatar from '../components/ProfileAvatar';
 
 import '../styles/ProfilePage.css';
 
-function showToast(msg) {
-    clearTimeout(toastTimer.current);
-    setToast(msg);
-    toastTimer.current = setTimeout(() => setToast(null), 2800);
-}
-
-function Toast({ message }) {
-    return <div className="profile-toast">
-        <Icon d={ICONS.check} size={15} stroke={2} />
-        {message}
-    </div>
-}
-
 export default function ProfilePage() {
     const { username } = useParams();
     const { user, token } = useAuth();
@@ -63,9 +50,7 @@ export default function ProfilePage() {
         onSuccess: () => {
             queryClient.invalidateQueries(['profile', username]);
             setEditing(false);
-            showToast('Profile updated');
-        },
-        onError: (err) => showToast(`Error: ${err.message}`),
+        }
     });
 
     function handleFileSelected(file) {
@@ -74,8 +59,6 @@ export default function ProfilePage() {
 
     const [modal, setModal] = useState(null); // 'followers' | 'following' | null
     const [editing, setEditing] = useState(false);
-    const [toast, setToast] = useState(null);
-    const toastTimer = useRef(null);
 
     function handleSaveProfile(patch) {
         updateMutation.mutate(patch);
@@ -169,7 +152,5 @@ export default function ProfilePage() {
         {modal === 'followers' && <UserListModal title={`Followers · ${profile.followers?.length}`} userIds={profile.followers} onClose={() => setModal(null)} currentUserFollowing={myFollowing ?? []} token={token} />}
 
         {modal === 'following' && <UserListModal title={`Following · ${profile.following?.length}`} userIds={profile.following} onClose={() => setModal(null)} currentUserFollowing={myFollowing ?? []} token={token} />}
-
-        {toast && <Toast message={toast} />}
     </>
 }
