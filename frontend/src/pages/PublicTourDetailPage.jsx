@@ -1,11 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { MapContainer, TileLayer, Marker, Popup, Tooltip } from 'react-leaflet';
-import L from 'leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Tooltip, useMap } from 'react-leaflet';
 import { api } from '../api/tourApi';
 import { useAuth } from '../context/AuthContext';
 import { Btn, Difficulty, Tag, TransportPill, ErrBanner, Icon, ICONS } from '../components';
+
+import L from 'leaflet';
+import 'leaflet-routing-machine';
+import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
 
 function makeKpIcon(index, isFirst) {
   return L.divIcon({
@@ -16,6 +19,44 @@ function makeKpIcon(index, isFirst) {
   });
 }
 
+function RouteLayer({ keyPoints }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (keyPoints.length < 2) return;
+
+    const waypoints = keyPoints.map((kp) =>
+      L.latLng(kp.latitude, kp.longitude)
+    );
+
+    const control = L.Routing.control({
+      waypoints,
+      routeWhileDragging: false,
+      addWaypoints: false,
+      draggableWaypoints: false,
+      fitSelectedRoutes: false,
+      show: false,
+      lineOptions: { styles: [{ color: '#5a7a5a', weight: 3, opacity: 0.7 }], },
+      createMarker: () => null,
+    });
+
+    const orig = control._clearLines.bind(control);
+    control._clearLines = function () {
+      if (this._map) orig();
+    };
+
+    control.addTo(map);
+
+    return () => {
+      try { control.getPlan().setWaypoints([]); } catch (_) {}
+      try { map.removeControl(control); } catch (_) {}
+    };
+
+    return () => { map.removeControl(control) };
+  }, [keyPoints.map((k) => `${k.id}-${k.latitude}-${k.longitude}`).join(',')]);
+
+  return null;
+}
 
 export default function PublicTourDetailPage() {
   const { id } = useParams();
@@ -134,6 +175,7 @@ export default function PublicTourDetailPage() {
                   <Tooltip direction="top" offset={[0, -24]} opacity={0.95}>{kp.name}</Tooltip>
                 </Marker>
               ))}
+              {tour?.keyPoints?.length > 1 && <RouteLayer keyPoints={tour?.keyPoints} />}
             </MapContainer>
           </div>
         </div>

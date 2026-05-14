@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/stakeholders': 'http://localhost:8080',
-      '/tours': 'http://localhost:8080',
+      '/tours/tours': 'http://localhost:8080',
       '/followers': 'http://localhost:8080',
       '/purchase': 'http://localhost:8080',
     },

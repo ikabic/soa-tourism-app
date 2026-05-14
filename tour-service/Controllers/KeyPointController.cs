@@ -65,7 +65,7 @@ public class KeyPointController(ITourService tourService) : ControllerBase
         try
         {
             await tourService.DeleteKeyPointAsync(authorId, tourId, keyPointId);
-            return Ok("Keypoint deleted");
+            return Ok(new { message = "Keypoint deleted" });
         }
         catch (KeyNotFoundException e) { return NotFound(e.Message); }
         catch (UnauthorizedAccessException) { return Forbid(); }
