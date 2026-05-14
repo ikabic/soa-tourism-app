@@ -175,7 +175,7 @@ export default function PublicTourDetailPage() {
                   <Tooltip direction="top" offset={[0, -24]} opacity={0.95}>{kp.name}</Tooltip>
                 </Marker>
               ))}
-              {tour.keyPoints.length > 1 && <RouteLayer keyPoints={tour.keyPoints} />}
+              {tour?.keyPoints?.length > 1 && <RouteLayer keyPoints={tour?.keyPoints} />}
             </MapContainer>
           </div>
         </div>
