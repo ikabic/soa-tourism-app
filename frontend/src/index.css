@@ -160,7 +160,7 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   transition: background .18s ease, color .18s ease;
   text-decoration: none;
 }
-.nav-link:hover { background: var(--sage-soft); color: var(--sage-darker); text-decoration: none; }
+.nav-link:hover { background: var(--sage-soft); color: var(--sage-darker); text-decoration: none; cursor: pointer; }
 .nav-link.active { background: var(--sage-soft); color: var(--sage-darker); }
 .nav-right { display: flex; align-items: center; gap: 14px; }
 .nav-user {

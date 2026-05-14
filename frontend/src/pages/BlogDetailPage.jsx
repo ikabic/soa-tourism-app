@@ -333,7 +333,7 @@ export default function BlogDetailPage() {
           <label className="field-label">New comment</label>
           <textarea className="input" rows={5} value={commentText} onChange={(e) => setCommentText(e.target.value)} placeholder="Write a comment…" />
         </div>
-        <div className="row gap-12" style={{ flexWrap: 'wrap' }}>
+        <div className="row gap-12" style={{ flexWrap: 'wrap', marginTop: 12 }}>
           <Btn type="submit" variant="primary" disabled={commentMutation.isPending}>Post comment</Btn>
           <span className="faint">Comments are visible to everyone who reads this post.</span>
         </div>

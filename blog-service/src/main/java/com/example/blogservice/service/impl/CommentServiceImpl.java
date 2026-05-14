@@ -3,6 +3,7 @@ package com.example.blogservice.service.impl;
 import com.example.blogservice.dto.CommentRequest;
 import com.example.blogservice.dto.CommentResponse;
 import com.example.blogservice.exception.BlogNotFoundException;
+import com.example.blogservice.exception.CommentForbiddenException;
 import com.example.blogservice.grpc.FollowersGrpcClient;
 import com.example.blogservice.model.Comment;
 import com.example.blogservice.repository.BlogPostRepository;
@@ -40,7 +41,7 @@ public class CommentServiceImpl implements CommentService {
         if (!blogAuthorId.equals(authorId)) {
             boolean canComment = followersGrpcClient.isFollowing(authorId, blogAuthorId);
             if (!canComment) {
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You must follow this author to comment on their blog");
+                throw new CommentForbiddenException();
             }
         }
 
