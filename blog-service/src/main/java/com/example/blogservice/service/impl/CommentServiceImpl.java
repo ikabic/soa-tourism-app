@@ -3,11 +3,14 @@ package com.example.blogservice.service.impl;
 import com.example.blogservice.dto.CommentRequest;
 import com.example.blogservice.dto.CommentResponse;
 import com.example.blogservice.exception.BlogNotFoundException;
+import com.example.blogservice.grpc.FollowersGrpcClient;
 import com.example.blogservice.model.Comment;
 import com.example.blogservice.repository.BlogPostRepository;
 import com.example.blogservice.repository.CommentRepository;
 import com.example.blogservice.service.CommentService;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -19,16 +22,26 @@ public class CommentServiceImpl implements CommentService {
 
     private final CommentRepository commentRepository;
     private final BlogPostRepository blogPostRepository;
+    private final FollowersGrpcClient followersGrpcClient;
 
-    public CommentServiceImpl(CommentRepository commentRepository, BlogPostRepository blogPostRepository) {
+    public CommentServiceImpl(CommentRepository commentRepository, BlogPostRepository blogPostRepository, FollowersGrpcClient followersGrpcClient) {
         this.commentRepository = commentRepository;
         this.blogPostRepository = blogPostRepository;
+		this.followersGrpcClient = followersGrpcClient;
     }
 
     @Override
     public CommentResponse addComment(UUID blogPostId, String authorId, CommentRequest request) {
-        if (!blogPostRepository.existsById(blogPostId)) {
-            throw new BlogNotFoundException(blogPostId.toString());
+    	var blog = blogPostRepository.findById(blogPostId)
+                .orElseThrow(() -> new BlogNotFoundException(blogPostId.toString()));
+
+        String blogAuthorId = blog.getAuthorId();
+
+        if (!blogAuthorId.equals(authorId)) {
+            boolean canComment = followersGrpcClient.isFollowing(authorId, blogAuthorId);
+            if (!canComment) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You must follow this author to comment on their blog");
+            }
         }
 
         LocalDateTime now = LocalDateTime.now();

@@ -45,8 +45,8 @@ services:
 
   blog-app:
     build:
-      context: ./blog-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./blog-service/Dockerfile
     container_name: blog-app
     networks:
       - servers
@@ -57,10 +57,13 @@ services:
       DB_PASSWORD: ${BLOG_DB_PASSWORD:-postgres}
       DB_NAME: ${BLOG_DB_NAME:-blog}
       JWT_SECRET: ${JWT_SECRET}
+      FOLLOWERS_GRPC_HOST: followers-app
+      FOLLOWERS_GRPC_PORT: 50051
     depends_on:
       blog-db:
         condition: service_healthy
-
+      followers-app:
+        condition: service_started
   tour-app:
     build:
       context: ./tour-service
