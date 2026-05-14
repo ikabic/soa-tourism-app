@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/google/uuid"
@@ -82,11 +83,31 @@ func (handler *ProfileHandler) UpdateProfile(writer http.ResponseWriter, request
 		return
 	}
 
+	currentLatitudeStr := request.FormValue("current_latitude")
+	currentLongitudeStr := request.FormValue("current_longitude")
+
+	var currentLatitude *float64
+	var currentLongitude *float64
+
+	if currentLatitudeStr != "" {
+		if lat, err := strconv.ParseFloat(currentLatitudeStr, 64); err == nil {
+			currentLatitude = &lat
+		}
+	}
+
+	if currentLongitudeStr != "" {
+		if lng, err := strconv.ParseFloat(currentLongitudeStr, 64); err == nil {
+			currentLongitude = &lng
+		}
+	}
+
 	req := dto.ProfileUpdate{
-		Name:      request.FormValue("name"),
-		LastName:  request.FormValue("last_name"),
-		Motto:     request.FormValue("motto"),
-		Biography: request.FormValue("biography"),
+		Name:             request.FormValue("name"),
+		LastName:         request.FormValue("last_name"),
+		Motto:            request.FormValue("motto"),
+		Biography:        request.FormValue("biography"),
+		CurrentLatitude:  currentLatitude,
+		CurrentLongitude: currentLongitude,
 	}
 
 	file, header, err := request.FormFile("avatar")

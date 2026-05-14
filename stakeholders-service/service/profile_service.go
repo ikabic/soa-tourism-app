@@ -29,14 +29,16 @@ func (service *ProfileService) GetProfile(username string, userId uuid.UUID) (*d
 	}
 
 	resp := &dto.ProfileResponse{
-		ID:        profile.UserID.String(),
-		Name:      profile.Name,
-		LastName:  profile.LastName,
-		Avatar:    profile.Avatar,
-		Biography: profile.Biography,
-		Motto:     profile.Motto,
-		Followers: []string{},
-		Following: []string{},
+		ID:               profile.UserID.String(),
+		Name:             profile.Name,
+		LastName:         profile.LastName,
+		Avatar:           profile.Avatar,
+		Biography:        profile.Biography,
+		Motto:            profile.Motto,
+		CurrentLatitude:  profile.CurrentLatitude,
+		CurrentLongitude: profile.CurrentLongitude,
+		Followers:        []string{},
+		Following:        []string{},
 	}
 
 	if service.FollowClient != nil {

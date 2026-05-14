@@ -36,6 +36,12 @@ export const api = {
     if (patch.motto     !== undefined) form.append('motto',     patch.motto);
     if (patch.biography !== undefined) form.append('biography', patch.biography);
     if (patch.avatar    instanceof File) form.append('avatar',  patch.avatar);
+    if (patch.current_latitude !== undefined && patch.current_latitude !== null) {
+      form.append('current_latitude', patch.current_latitude.toString());
+    }
+    if (patch.current_longitude !== undefined && patch.current_longitude !== null) {
+      form.append('current_longitude', patch.current_longitude.toString());
+    }
 
     const res = await fetch('/stakeholders/profile', { method: 'PUT', headers: { 'Authorization': `Bearer ${token}` }, body: form });
     if (!res.ok) return res.text().then(t => { throw new Error(t || `HTTP ${res.status}`); });
