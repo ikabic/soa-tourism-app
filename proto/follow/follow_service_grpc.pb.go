@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	FollowService_GetFollowRelationships_FullMethodName = "/FollowService/GetFollowRelationships"
+	FollowService_IsFollowing_FullMethodName            = "/FollowService/IsFollowing"
 )
 
 // FollowServiceClient is the client API for FollowService service.
@@ -27,6 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type FollowServiceClient interface {
 	GetFollowRelationships(ctx context.Context, in *FollowRelationshipsRequest, opts ...grpc.CallOption) (*FollowRelationshipsResponse, error)
+	IsFollowing(ctx context.Context, in *IsFollowingRequest, opts ...grpc.CallOption) (*IsFollowingResponse, error)
 }
 
 type followServiceClient struct {
@@ -47,11 +49,22 @@ func (c *followServiceClient) GetFollowRelationships(ctx context.Context, in *Fo
 	return out, nil
 }
 
+func (c *followServiceClient) IsFollowing(ctx context.Context, in *IsFollowingRequest, opts ...grpc.CallOption) (*IsFollowingResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(IsFollowingResponse)
+	err := c.cc.Invoke(ctx, FollowService_IsFollowing_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // FollowServiceServer is the server API for FollowService service.
 // All implementations must embed UnimplementedFollowServiceServer
 // for forward compatibility.
 type FollowServiceServer interface {
 	GetFollowRelationships(context.Context, *FollowRelationshipsRequest) (*FollowRelationshipsResponse, error)
+	IsFollowing(context.Context, *IsFollowingRequest) (*IsFollowingResponse, error)
 	mustEmbedUnimplementedFollowServiceServer()
 }
 
@@ -64,6 +77,9 @@ type UnimplementedFollowServiceServer struct{}
 
 func (UnimplementedFollowServiceServer) GetFollowRelationships(context.Context, *FollowRelationshipsRequest) (*FollowRelationshipsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetFollowRelationships not implemented")
+}
+func (UnimplementedFollowServiceServer) IsFollowing(context.Context, *IsFollowingRequest) (*IsFollowingResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method IsFollowing not implemented")
 }
 func (UnimplementedFollowServiceServer) mustEmbedUnimplementedFollowServiceServer() {}
 func (UnimplementedFollowServiceServer) testEmbeddedByValue()                       {}
@@ -104,6 +120,24 @@ func _FollowService_GetFollowRelationships_Handler(srv interface{}, ctx context.
 	return interceptor(ctx, in, info, handler)
 }
 
+func _FollowService_IsFollowing_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IsFollowingRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FollowServiceServer).IsFollowing(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FollowService_IsFollowing_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FollowServiceServer).IsFollowing(ctx, req.(*IsFollowingRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // FollowService_ServiceDesc is the grpc.ServiceDesc for FollowService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -114,6 +148,10 @@ var FollowService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetFollowRelationships",
 			Handler:    _FollowService_GetFollowRelationships_Handler,
+		},
+		{
+			MethodName: "IsFollowing",
+			Handler:    _FollowService_IsFollowing_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

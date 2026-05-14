@@ -117,6 +117,102 @@ func (x *FollowRelationshipsResponse) GetFollowingIds() []string {
 	return nil
 }
 
+type IsFollowingRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FollowerId    string                 `protobuf:"bytes,1,opt,name=follower_id,json=followerId,proto3" json:"follower_id,omitempty"`
+	FollowedId    string                 `protobuf:"bytes,2,opt,name=followed_id,json=followedId,proto3" json:"followed_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *IsFollowingRequest) Reset() {
+	*x = IsFollowingRequest{}
+	mi := &file_follow_service_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *IsFollowingRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*IsFollowingRequest) ProtoMessage() {}
+
+func (x *IsFollowingRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_follow_service_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use IsFollowingRequest.ProtoReflect.Descriptor instead.
+func (*IsFollowingRequest) Descriptor() ([]byte, []int) {
+	return file_follow_service_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *IsFollowingRequest) GetFollowerId() string {
+	if x != nil {
+		return x.FollowerId
+	}
+	return ""
+}
+
+func (x *IsFollowingRequest) GetFollowedId() string {
+	if x != nil {
+		return x.FollowedId
+	}
+	return ""
+}
+
+type IsFollowingResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	IsFollowing   bool                   `protobuf:"varint,1,opt,name=is_following,json=isFollowing,proto3" json:"is_following,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *IsFollowingResponse) Reset() {
+	*x = IsFollowingResponse{}
+	mi := &file_follow_service_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *IsFollowingResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*IsFollowingResponse) ProtoMessage() {}
+
+func (x *IsFollowingResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_follow_service_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use IsFollowingResponse.ProtoReflect.Descriptor instead.
+func (*IsFollowingResponse) Descriptor() ([]byte, []int) {
+	return file_follow_service_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *IsFollowingResponse) GetIsFollowing() bool {
+	if x != nil {
+		return x.IsFollowing
+	}
+	return false
+}
+
 var File_follow_service_proto protoreflect.FileDescriptor
 
 const file_follow_service_proto_rawDesc = "" +
@@ -126,9 +222,18 @@ const file_follow_service_proto_rawDesc = "" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\"e\n" +
 	"\x1bFollowRelationshipsResponse\x12!\n" +
 	"\ffollower_ids\x18\x01 \x03(\tR\vfollowerIds\x12#\n" +
-	"\rfollowing_ids\x18\x02 \x03(\tR\ffollowingIds2d\n" +
+	"\rfollowing_ids\x18\x02 \x03(\tR\ffollowingIds\"V\n" +
+	"\x12IsFollowingRequest\x12\x1f\n" +
+	"\vfollower_id\x18\x01 \x01(\tR\n" +
+	"followerId\x12\x1f\n" +
+	"\vfollowed_id\x18\x02 \x01(\tR\n" +
+	"followedId\"8\n" +
+	"\x13IsFollowingResponse\x12!\n" +
+	"\fis_following\x18\x01 \x01(\bR\visFollowing2\x9e\x01\n" +
 	"\rFollowService\x12S\n" +
-	"\x16GetFollowRelationships\x12\x1b.FollowRelationshipsRequest\x1a\x1c.FollowRelationshipsResponseB\x0eZ\fproto/followb\x06proto3"
+	"\x16GetFollowRelationships\x12\x1b.FollowRelationshipsRequest\x1a\x1c.FollowRelationshipsResponse\x128\n" +
+	"\vIsFollowing\x12\x13.IsFollowingRequest\x1a\x14.IsFollowingResponseB%\n" +
+	"\x06followB\rFollowServiceZ\fproto/followb\x06proto3"
 
 var (
 	file_follow_service_proto_rawDescOnce sync.Once
@@ -142,16 +247,20 @@ func file_follow_service_proto_rawDescGZIP() []byte {
 	return file_follow_service_proto_rawDescData
 }
 
-var file_follow_service_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_follow_service_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_follow_service_proto_goTypes = []any{
 	(*FollowRelationshipsRequest)(nil),  // 0: FollowRelationshipsRequest
 	(*FollowRelationshipsResponse)(nil), // 1: FollowRelationshipsResponse
+	(*IsFollowingRequest)(nil),          // 2: IsFollowingRequest
+	(*IsFollowingResponse)(nil),         // 3: IsFollowingResponse
 }
 var file_follow_service_proto_depIdxs = []int32{
 	0, // 0: FollowService.GetFollowRelationships:input_type -> FollowRelationshipsRequest
-	1, // 1: FollowService.GetFollowRelationships:output_type -> FollowRelationshipsResponse
-	1, // [1:2] is the sub-list for method output_type
-	0, // [0:1] is the sub-list for method input_type
+	2, // 1: FollowService.IsFollowing:input_type -> IsFollowingRequest
+	1, // 2: FollowService.GetFollowRelationships:output_type -> FollowRelationshipsResponse
+	3, // 3: FollowService.IsFollowing:output_type -> IsFollowingResponse
+	2, // [2:4] is the sub-list for method output_type
+	0, // [0:2] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
@@ -168,7 +277,7 @@ func file_follow_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_follow_service_proto_rawDesc), len(file_follow_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

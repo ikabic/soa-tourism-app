@@ -35,6 +35,14 @@ func (s *FollowServiceServer) GetFollowRelationships(ctx context.Context, req *p
 	}, nil
 }
 
+func (s *FollowServiceServer) IsFollowing(ctx context.Context, req *pb.IsFollowingRequest) (*pb.IsFollowingResponse, error) {
+    result, err := s.Repo.IsFollowing(req.FollowerId, req.FollowedId)
+    if err != nil {
+        return nil, err
+    }
+    return &pb.IsFollowingResponse{IsFollowing: result}, nil
+}
+
 func StartGRPCServer(repo *repo.FollowRepository) {
 	port := os.Getenv("GRPC_PORT")
 	if port == "" {
