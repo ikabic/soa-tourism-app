@@ -178,6 +178,10 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   font-family: var(--serif); font-size: 13px; font-weight: 500;
 }
 
+.nav-user .avatar:hover {
+  cursor: pointer;
+}
+
 /* ─── card ─────────────────────────────────────────────────────────────── */
 
 .card {
@@ -189,6 +193,10 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
 .card-warm { background: var(--card-warm); }
 
 /* ─── buttons ──────────────────────────────────────────────────────────── */
+
+button:hover {
+  cursor: pointer;
+}
 
 .btn {
   appearance: none;

@@ -7,6 +7,7 @@ import CreateTourPage from './pages/CreateTourPage';
 import TourDetailPage from './pages/TourDetailPage';
 import BrowseToursPage from './pages/BrowseToursPage';
 import PublicTourDetailPage from './pages/PublicTourDetailPage';
+import ProfilePage from './pages/ProfilePage';
 import CartPage from './pages/CartPage';
 import PurchasedToursPage from './pages/PurchasedToursPage';
 import SimulatorPage from './pages/SimulatorPage';
@@ -65,8 +66,8 @@ function Nav() {
             <Btn variant="ghost" icon="cart" ariaLabel="Open cart" iconOnly onClick={() => navigate('/cart')} />
           )}
           <div className="nav-user">
-            <span className="muted" style={{ fontSize: 13 }}>{user?.role}</span>
-            <div className="avatar">{initials}</div>
+            <span className="muted" style={{ fontSize: 13 }}>{user?.username}</span>
+            <div className="avatar" onClick={() => navigate(`/${user?.username}`)}>{initials}</div>
           </div>
           <Btn variant="ghost" size="sm" icon="log" onClick={() => { logout(); navigate('/login'); }}>
             Sign out
@@ -108,6 +109,7 @@ export default function App() {
         <Route path="tours/:id" element={
           user?.role === 'guide' ? <TourDetailPage /> : <Navigate to="/browse" replace />
         } />
+
         <Route path="browse" element={<BrowseToursPage />} />
         <Route path="browse/:id" element={<PublicTourDetailPage />} />
         <Route path="cart" element={
@@ -124,6 +126,11 @@ export default function App() {
         } />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
+
+      <Route path="/" element={<RequireAuth><Layout /></RequireAuth>}>
+        <Route path=":username" element={<ProfilePage />} />
+      </Route>
+
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );

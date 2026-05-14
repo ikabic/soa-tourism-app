@@ -1,6 +1,6 @@
+import { api } from '../api/stakeholdersApi';
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { api } from '../api/tourApi';
 import { useAuth } from '../context/AuthContext';
 import { Icon, ICONS, Btn, ErrBanner } from '../components';
 
