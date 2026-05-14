@@ -17,9 +17,6 @@ async function req(method, path, body, token) {
 }
 
 export const api = {
-  login: (username, password) =>
-    req('POST', '/stakeholders/login', { username, password }),
-
   createTour: (data, token) =>
     req('POST', '/tours/tours', data, token),
 

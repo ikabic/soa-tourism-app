@@ -7,6 +7,7 @@ import CreateTourPage from './pages/CreateTourPage';
 import TourDetailPage from './pages/TourDetailPage';
 import BrowseToursPage from './pages/BrowseToursPage';
 import PublicTourDetailPage from './pages/PublicTourDetailPage';
+import ProfilePage from './pages/ProfilePage';
 
 function RequireAuth({ children }) {
   const { user } = useAuth();
@@ -43,8 +44,8 @@ function Nav() {
         </div>
         <div className="nav-right" style={{ flex: 1, justifyContent: 'flex-end' }}>
           <div className="nav-user">
-            <span className="muted" style={{ fontSize: 13 }}>{user?.role}</span>
-            <div className="avatar">{initials}</div>
+            <span className="muted" style={{ fontSize: 13 }}>{user?.username}</span>
+            <div className="avatar" onClick={() => navigate(`/${user?.username}`)}>{initials}</div>
           </div>
           <Btn variant="ghost" size="sm" icon="log" onClick={() => { logout(); navigate('/login'); }}>
             Sign out
@@ -72,6 +73,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+
       <Route path="/" element={<RequireAuth><Layout /></RequireAuth>}>
         <Route index element={
           <Navigate to={user?.role === 'guide' ? '/my-tours' : '/browse'} replace />
@@ -85,10 +87,15 @@ export default function App() {
         <Route path="tours/:id" element={
           user?.role === 'guide' ? <TourDetailPage /> : <Navigate to="/browse" replace />
         } />
+
         <Route path="browse" element={<BrowseToursPage />} />
         <Route path="browse/:id" element={<PublicTourDetailPage />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
+
+      <Route path="/" element={<RequireAuth><Layout /></RequireAuth>}>
+        <Route path=":username" element={<ProfilePage />} />
+      </Route>
+
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
