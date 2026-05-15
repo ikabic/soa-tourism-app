@@ -1,16 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/blogApi';
 import { api as stakeholdersApi } from '../api/stakeholdersApi';
-import { Btn, ErrBanner, Icon, ICONS } from '../components';
+import { api as followersApi } from '../api/followersApi';
+import { Btn, ErrBanner, Icon, ICONS, ProfileUsername } from '../components';
 import { formatDate } from '../utils/helpers';
 import ReactMarkdown from 'react-markdown';
+import BlockRequestModal from '../components/BlockRequestModal';
 
 export default function BlogDetailPage() {
   const { id } = useParams();
   const { token, user } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [commentText, setCommentText] = useState('');
   const [formError, setFormError] = useState(null);
@@ -20,6 +23,28 @@ export default function BlogDetailPage() {
     queryFn: () => api.getBlog(id, token),
     enabled: !!token,
   });
+
+  const { data: canReadData, isLoading: canReadLoading } = useQuery({
+    queryKey: ['can-read-blog', blog?.authorId],
+    queryFn: () => followersApi.canReadBlog(blog.authorId, token),
+    enabled: !!blog?.authorId && !!token,
+  });
+
+  const canRead = canReadData?.canRead ?? false;
+  const isOwnBlog = blog?.authorId === user?.userId;
+
+  const { data: authorProfile } = useQuery({
+     queryKey: ['author-profile-single', blog?.authorId],
+     queryFn: async () => {
+       const result = await stakeholdersApi.getProfiles(blog.authorId);
+       if (Array.isArray(result)) return result[0] ?? null;
+       return result ?? null;
+     },
+     enabled: !!blog?.authorId && !!token,
+     staleTime: 60_000,
+  });
+
+  const authorUsername = authorProfile?.username ?? authorProfile?.Username ?? null;
 
   const { data: comments = [], isLoading: commentsLoading, error: commentsError } = useQuery({
     queryKey: ['blog-comments', id],
@@ -194,6 +219,8 @@ export default function BlogDetailPage() {
   if (blogLoading) return <div className="container" style={{ padding: 40 }}>Loading blog…</div>;
   if (blogError) return <div className="container" style={{ padding: 40 }}><ErrBanner>{blogError.message}</ErrBanner></div>;
 
+ 
+
   return (
     <div className="container" style={{ padding: '40px 0 80px' }}>
       <div className="row between" style={{ marginBottom: 18 }}>
@@ -203,7 +230,7 @@ export default function BlogDetailPage() {
           <div className="row gap-8 wrap" style={{ marginTop: 10, color: 'var(--ink-faint)', fontSize: 13 }}>
             <span>{formatDate(blog.createdAt)}</span>
             <span>·</span>
-            <span>by {authorName}</span>
+            <span>by&nbsp;<ProfileUsername username={authorName} isInline={true} color='var(--ink-faint)' /></span>
             <span>·</span>
             <span>{likes} like{likes !== 1 ? 's' : ''}</span>
           </div>
@@ -352,7 +379,7 @@ export default function BlogDetailPage() {
             <div key={comment.id} className="card fade-up" style={{ padding: 18 }}>
               <div className="row between" style={{ marginBottom: 10, gap: 12, alignItems: 'center' }}>
                 <div>
-                  <strong>{authorById.get(comment.authorId) || comment.authorId}</strong>
+                  <ProfileUsername username={authorById.get(comment.authorId) || comment.authorId} isInline={true} />
                   <div className="faint" style={{ fontSize: 12 }}>{formatDate(comment.createdAt)}{comment.updatedAt && comment.updatedAt !== comment.createdAt ? ' · edited' : ''}</div>
                 </div>
               </div>
@@ -361,6 +388,9 @@ export default function BlogDetailPage() {
           ))}
         </div>
       )}
+
+      {!isOwnBlog && !canRead && !canReadLoading && <BlockRequestModal icon={ICONS.lock} title={'Follow to read'} message={<> This blog is written by <strong>{authorUsername || 'this author'}</strong>. You need to follow them to read their posts.</>}
+        onClose={() => navigate('/blogs')} cancelLabel={'Back to blogs'} onConfirm={() => navigate(`/${authorUsername}`)} confirmLabel={'View profile'} />}
     </div>
   );
 }

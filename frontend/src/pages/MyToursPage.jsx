@@ -5,6 +5,7 @@ import { api } from '../api/tourApi';
 import { useAuth } from '../context/AuthContext';
 import { Btn, StatusBadge, Difficulty, Tag, TransportPill, ErrBanner, Icon, ICONS } from '../components';
 import { formatDate } from '../utils/helpers';
+import RecommendationsBanner from '../components/RecommendationsBanner';
 
 export default function MyToursPage() {
   const { token } = useAuth();
@@ -43,6 +44,8 @@ export default function MyToursPage() {
           New tour
         </Btn>
       </div>
+
+      <RecommendationsBanner />
 
       <div className="row gap-8 wrap" style={{ marginBottom: 22 }}>
         {Object.keys(counts).map((k) => (

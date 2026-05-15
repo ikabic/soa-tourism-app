@@ -4,7 +4,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { MapContainer, TileLayer, Marker, Popup, Tooltip, useMap } from 'react-leaflet';
 import { api } from '../api/tourApi';
 import { useAuth } from '../context/AuthContext';
-import { Btn, Difficulty, Tag, TransportPill, ErrBanner, Icon, ICONS } from '../components';
+import { Btn, Difficulty, Tag, TransportPill, ErrBanner, Icon, ICONS, ProfileUsername } from '../components';
+import { formatDate } from '../utils/helpers';
 
 import L from 'leaflet';
 import 'leaflet-routing-machine';
@@ -56,6 +57,235 @@ function RouteLayer({ keyPoints }) {
   }, [keyPoints.map((k) => `${k.id}-${k.latitude}-${k.longitude}`).join(',')]);
 
   return null;
+}
+
+function StarRating({ value, onChange, readonly = false }) {
+  const [hovered, setHovered] = useState(null);
+  return (
+    <div style={{ display: 'inline-flex', gap: 4 }}>
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          type="button"
+          onClick={() => !readonly && onChange?.(star)}
+          onMouseEnter={() => !readonly && setHovered(star)}
+          onMouseLeave={() => !readonly && setHovered(null)}
+          style={{
+            background: 'none', border: 'none', padding: 0, cursor: readonly ? 'default' : 'pointer',
+            color: (hovered ?? value) >= star ? 'var(--gold)' : 'var(--sage-line)',
+            transition: 'color .12s ease',
+          }}
+        >
+          <Icon d={ICONS.star} size={20} stroke={1.2} fill={(hovered ?? value) >= star ? 'currentColor' : 'none'} />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function ReviewCard({ review }) {
+  return (
+    <div style={{
+      padding: '16px 0',
+      borderTop: '0.5px dashed var(--sage-line)',
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{
+            width: 36, height: 36, borderRadius: '50%',
+            background: 'var(--sage)', color: 'var(--paper)',
+            display: 'grid', placeItems: 'center',
+            fontFamily: 'var(--serif)', fontSize: 14, fontWeight: 600, flexShrink: 0,
+          }}>
+            {review.touristUsername?.[0]?.toUpperCase() || '?'}
+          </div>
+          <div>
+            <ProfileUsername fontSize={14} username={review.touristUsername}/>
+            <div className="faint" style={{ fontSize: 12 }}>Visited {formatDate(review.visitedAt)}</div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+          <StarRating value={review.rating} readonly />
+          <span className="faint" style={{ fontSize: 11 }}>{formatDate(review.createdAt)}</span>
+        </div>
+      </div>
+
+      <p style={{ marginTop: 12, fontSize: 14, lineHeight: 1.6, color: 'var(--ink-soft)' }}>{review.comment}</p>
+
+      {review.imageBase64s?.length > 0 && (
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
+          {review.imageBase64s.map((img, i) => (
+            <img key={i} src={`data:image/jpeg;base64,${img}`} alt={`Review image ${i + 1}`}
+              style={{ width: 90, height: 90, objectFit: 'cover', borderRadius: 8, border: '0.5px solid var(--sage-line)' }} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ReviewSection({ tourId, token, isPurchased }) {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const isTourist = user?.role === 'tourist';
+
+  const [form, setForm] = useState({ rating: 0, comment: '', visitedAt: '', images: [] });
+  const [formErr, setFormErr] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+
+  const { data: reviews = [], isLoading } = useQuery({
+    queryKey: ['reviews', tourId],
+    queryFn: () => api.getReviews(tourId, token),
+    enabled: Boolean(tourId && token),
+  });
+
+  const createMut = useMutation({
+    mutationFn: async () => {
+      const imageBase64s = await Promise.all(
+        form.images.map((file) =>
+          new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result.split(',')[1]);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          })
+        )
+      );
+      return api.createReview(tourId, {
+        rating: form.rating,
+        comment: form.comment,
+        visitedAt: new Date(form.visitedAt).toISOString(),
+        imageBase64s,
+      }, token);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['reviews', tourId] });
+      setForm({ rating: 0, comment: '', visitedAt: '', images: [] });
+      setShowForm(false);
+      setFormErr(null);
+    },
+    onError: (e) => setFormErr(e.message),
+  });
+
+  const handleSubmit = () => {
+    if (form.rating === 0) { setFormErr('Please select a rating.'); return; }
+    if (!form.comment.trim()) { setFormErr('Please write a comment.'); return; }
+    if (!form.visitedAt) { setFormErr('Please select when you visited.'); return; }
+    setFormErr(null);
+    createMut.mutate();
+  };
+
+  const avgRating = reviews.length > 0
+    ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)
+    : null;
+
+  return (
+    <div className="card fade-up p-20" style={{ marginTop: 20 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
+        <div>
+          <span className="eyebrow">Community</span>
+          <h3 style={{ marginTop: 4 }}>Reviews</h3>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {avgRating && (
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontFamily: 'var(--serif)', fontSize: 24, color: 'var(--sage-darker)', lineHeight: 1 }}>{avgRating}</div>
+              <div className="faint" style={{ fontSize: 11 }}>{reviews.length} review{reviews.length !== 1 ? 's' : ''}</div>
+            </div>
+          )}
+          {isTourist && isPurchased && !showForm && (
+            <Btn variant="primary" size="sm" icon="plus" onClick={() => setShowForm(true)}>
+              Write a review
+            </Btn>
+          )}
+        </div>
+      </div>
+
+      {isTourist && isPurchased && showForm && (
+        <div style={{
+          background: 'var(--paper-deep)', borderRadius: 'var(--radius)',
+          padding: 16, marginBottom: 20, border: '0.5px solid var(--sage-line)',
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <h4 style={{ margin: 0 }}>Your review</h4>
+            <button className="btn-icon" onClick={() => { setShowForm(false); setFormErr(null); }}>
+              <Icon d={ICONS.close} size={14} />
+            </button>
+          </div>
+
+          <div className="col gap-12">
+            <div className="field">
+              <label className="field-label">Rating</label>
+              <StarRating value={form.rating} onChange={(v) => setForm({ ...form, rating: v })} />
+            </div>
+
+            <div className="field">
+              <label className="field-label">Comment</label>
+              <textarea className="textarea" rows={3} placeholder="Share your experience…"
+                value={form.comment} onChange={(e) => setForm({ ...form, comment: e.target.value })} />
+            </div>
+
+            <div className="field">
+              <label className="field-label">Date visited</label>
+              <input className="input" type="date" value={form.visitedAt}
+                max={new Date().toISOString().split('T')[0]}
+                onChange={(e) => setForm({ ...form, visitedAt: e.target.value })} />
+            </div>
+
+            <div className="field">
+               <label className="field-label">Photos (optional)</label>
+               <input type="file" accept="image/*" multiple style={{ fontSize: 13, color: 'var(--ink-soft)' }} onChange={(e) => {
+                  const files = Array.from(e.target.files);
+                  setForm({ ...form, images: files });
+                }} />
+                {form.images.length > 0 && (
+                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+                     {form.images.map((file, i) => (<div key={i} style={{ position: 'relative' }}>
+                        <img src={URL.createObjectURL(file)} alt={`Preview ${i + 1}`} style={{
+                              width: 80, height: 80, objectFit: 'cover',
+                              borderRadius: 8, border: '0.5px solid var(--sage-line)',
+                            }}
+                        />
+                        <button type="button" onClick={() => setForm({ ...form, images: form.images.filter((_, idx) => idx !== i) })}
+                          style={{
+                             position: 'absolute', top: -6, right: -6,
+                             width: 20, height: 20, borderRadius: '50%',
+                             border: 'none', background: 'var(--terracotta)',
+                             color: 'var(--paper)', fontSize: 12,
+                             cursor: 'pointer', display: 'grid', placeItems: 'center',
+                           }}
+                        >×</button>
+                      </div>
+                      ))}
+                   </div>
+                 )}
+             </div>
+
+            {formErr && <ErrBanner onClose={() => setFormErr(null)}>{formErr}</ErrBanner>}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <Btn variant="ghost" size="sm" onClick={() => { setShowForm(false); setFormErr(null); }}>Cancel</Btn>
+              <Btn variant="primary" size="sm" onClick={handleSubmit} disabled={createMut.isPending}>
+                {createMut.isPending ? 'Submitting…' : 'Submit review'}
+              </Btn>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isLoading ? (
+        <p className="muted" style={{ fontSize: 13.5 }}>Loading reviews…</p>
+      ) : reviews.length === 0 ? (
+        <div className="empty" style={{ padding: 22, marginTop: 8 }}>
+          <p style={{ margin: 0 }}>No reviews yet. {isTourist && isPurchased ? 'Be the first to share your experience!' : ''}</p>
+        </div>
+      ) : (
+        <div style={{ marginTop: 8 }}>
+          {reviews.map((r) => <ReviewCard key={r.id} review={r} />)}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function PublicTourDetailPage() {
@@ -235,6 +465,7 @@ export default function PublicTourDetailPage() {
           )}
         </div>
       </div>
+       <ReviewSection tourId={id} token={token} isPurchased={tour.isPurchased} />
     </div>
   );
 }
