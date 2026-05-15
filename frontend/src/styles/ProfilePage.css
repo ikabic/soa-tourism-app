@@ -52,20 +52,23 @@
 }
 
 .profile-avatar {
-  width: 96px;
-  height: 96px;
   border-radius: 50%;
-  border: 3px solid var(--card);
-  box-shadow: 0 0 0 1px var(--sage-line), var(--shadow-pop);
   overflow: hidden;
   background: var(--sage);
   display: grid;
   place-items: center;
   font-family: var(--serif);
-  font-size: 36px;
   color: var(--paper);
   font-weight: 500;
   user-select: none;
+  cursor: pointer;
+}
+
+.profile-avatar.extended {
+  border: 3px solid var(--card);
+  box-shadow: 0 0 0 1px var(--sage-line), var(--shadow-pop);
+  font-size: 36px;
+  cursor: default !important;
 }
 
 .profile-avatar img {
@@ -107,11 +110,12 @@
   letter-spacing: -0.015em;
 }
 
-.profile-username {
+.profile-username-info {
   font-family: var(--sans);
   font-size: 14px;
   color: var(--ink-faint);
   letter-spacing: 0.01em;
+  font-weight: 500;
 }
 
 .profile-motto {

@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/tourApi';
 import { useAuth } from '../context/AuthContext';
-import { Btn, ErrBanner, Icon, ICONS } from '../components';
+import { Btn, ErrBanner, Icon, ICONS, ProfileUsername } from '../components';
+import ProfileAvatar from '../components/ProfileAvatar';
 
 export default function AdminUsersPage() {
   const { token } = useAuth();
@@ -70,32 +71,12 @@ export default function AdminUsersPage() {
             }}
           >
             <div className="row gap-16">
-              <div
-                className="avatar"
-                style={{
-                  width: 48,
-                  height: 48,
-                  fontSize: 18,
-                  background: u.isBlocked
-                    ? 'var(--terracotta)'
-                    : 'var(--sage-deep)',
-                }}
-              >
-                {u.username?.[0]?.toUpperCase()}
-              </div>
+              <ProfileAvatar size={64} isOwn={false} profile={u} />
 
-              <div className="col gap-4">
-                <div
-                  style={{
-                    fontFamily: 'var(--serif)',
-                    fontSize: 20,
-                    color: 'var(--sage-darker)',
-                  }}
-                >
-                  {u.username}
-                </div>
+              <div className="col gap-8">
+                <ProfileUsername username={u.username} fontSize={16} />
 
-                <div className="muted" style={{ fontSize: 14 }}>
+                <div className="muted" style={{ fontSize: 14, marginTop: -8 }}>
                   {u.email}
                 </div>
 

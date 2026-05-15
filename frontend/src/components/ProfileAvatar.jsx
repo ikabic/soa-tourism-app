@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import { Icon, ICONS } from ".";
+import { useNavigate } from "react-router-dom";
 
 export function getInitials(firstName, lastName, username) {
     if (firstName && lastName) return `${firstName[0]}${lastName[0]}`.toUpperCase();
@@ -8,8 +9,10 @@ export function getInitials(firstName, lastName, username) {
     return '?';
 }
 
-export default function ProfileAvatar({ profile, isOwn, onFileSelected }) {
+export default function ProfileAvatar({ profile, isOwn, onFileSelected, isProfilePage = false, size }) {
     const fileInputRef = useRef(null);
+    const fontSize = size / 2.7;
+    const navigate = useNavigate();
 
     function handleChange(e) {
         const file = e.target.files?.[0];
@@ -17,8 +20,8 @@ export default function ProfileAvatar({ profile, isOwn, onFileSelected }) {
         e.target.value = '';
     }
 
-    return <div className="profile-avatar-wrap">
-        <div className="profile-avatar">
+    return <div className="profile-avatar-wrap" onClick={() => navigate(`/${profile.username}`)}>
+        <div className={isProfilePage ? "profile-avatar extended" : "profile-avatar"} style={{ height: size, width: size, fontSize: fontSize }}>
             {profile.avatar ? <img src={`http://localhost:8080${profile.avatar}`} alt={profile.username} /> : getInitials(profile.name, profile.last_name, profile.username)}
         </div>
         {isOwn && <>

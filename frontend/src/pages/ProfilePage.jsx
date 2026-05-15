@@ -86,14 +86,14 @@ export default function ProfilePage() {
         <div className="profile-hero">
             <div className="container">
                 <div className="profile-hero-identity">
-                    <ProfileAvatar profile={profile} isOwn={isOwn} onFileSelected={handleFileSelected} />
+                    <ProfileAvatar profile={profile} isOwn={isOwn} onFileSelected={handleFileSelected} isProfilePage={true} size={96} />
 
                     <div className="profile-hero-info">
                         <div className="profile-hero-name-row">
                             <h1 className="profile-name">{displayName}</h1>
                             {isOwn && <span className="profile-own-badge">You</span>}
                         </div>
-                        <div className="profile-username">@{profile.username}</div>
+                        <div className="profile-username-info">@{profile.username}</div>
                         <p className={`profile-motto ${!profile?.motto ? 'is-placeholder' : ''}`}>
                             {profile?.motto ? `“${profile.motto}”` : 'No motto set'}
                         </p>
