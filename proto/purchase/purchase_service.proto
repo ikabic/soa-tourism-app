@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+option go_package = "proto/purchase";
+option csharp_namespace = "TourService.Grpc";
+
+package purchase;
+
+service PurchaseService {
+  rpc HasPurchased (HasPurchasedRequest) returns (HasPurchasedResponse);
+}
+
+message HasPurchasedRequest {
+  string user_id = 1;
+  string tour_id = 2;
+}
+
+message HasPurchasedResponse {
+  bool purchased = 1;
+}
