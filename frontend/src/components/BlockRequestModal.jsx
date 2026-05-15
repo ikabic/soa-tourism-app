@@ -9,7 +9,7 @@ export default function BlockRequestModal({ icon, title, message, onConfirm, onC
             <div className="muted" style={{ marginTop: 8, lineHeight: 1.6 }}>{message}</div>
 
             <div style={{ marginTop: 20, display: 'flex', gap: 10, justifyContent: 'center' }}>
-                <Btn variant="ghost" onClick={cancelLabel}>{cancelLabel}</Btn>
+                <Btn variant="ghost" onClick={onClose}>{cancelLabel}</Btn>
                 <Btn variant="primary" onClick={onConfirm}>{confirmLabel}</Btn>
             </div>
         </div>
