@@ -9,4 +9,5 @@ public interface ITourExecutionService
     Task<TourExecutionResponse> AbandonExecutionAsync(string touristId, Guid executionId);
     Task<CheckPositionResponse> CheckPositionAsync(string touristId, Guid executionId, CheckPositionRequest request);
     Task<TourExecutionResponse?> GetActiveExecutionAsync(string touristId, Guid tourId);
+    Task<TourExecutionResponse?> GetByIdAsync(string touristId, Guid executionId);
 }

@@ -172,4 +172,17 @@ public class TourExecutionService(
         StartLongitude = e.StartLongitude,
         CompletedKeyPointIds = e.CompletedKeyPoints.Select(c => c.KeyPointId).ToList(),
     };
+
+    public async Task<TourExecutionResponse?> GetByIdAsync(string touristId, Guid executionId)
+    {
+      var execution = await executionRepository.GetByIdAsync(executionId);
+
+      if (execution == null)
+          return null;
+
+      if (execution.TouristId != touristId)
+          throw new UnauthorizedAccessException();
+
+      return MapToResponse(execution);
+    }
 }

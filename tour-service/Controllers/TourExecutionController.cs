@@ -85,4 +85,25 @@ public class TourExecutionController(ITourExecutionService executionService) : C
         catch (UnauthorizedAccessException) { return StatusCode(403); }
         catch (InvalidOperationException e) { return BadRequest(e.Message); }
     }
+
+    [HttpGet("{executionId:guid}")]
+    public async Task<ActionResult<TourExecutionResponse>> GetById(Guid tourId, Guid executionId)
+    {
+       var touristId = HttpContext.Items["userId"] as string;
+       if (string.IsNullOrEmpty(touristId)) return Unauthorized();
+
+       try
+       {
+           var execution = await executionService.GetByIdAsync(touristId, executionId);
+
+           if (execution == null)
+               return NotFound();
+
+           return Ok(execution);
+       }
+       catch (UnauthorizedAccessException)
+       {
+          return StatusCode(403);
+       }
+    }
 }
