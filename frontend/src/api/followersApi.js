@@ -21,5 +21,11 @@ export const api = {
     req('POST', `/followers/${id}/follow`, undefined, token),
 
   unfollow: (id, token) =>
-    req('DELETE', `/followers/${id}/unfollow`, undefined, token)
+    req('DELETE', `/followers/${id}/unfollow`, undefined, token),
+
+  getRecommendations: (userId, token) =>
+    req('GET', `/followers/${userId}/recommendations`, undefined, token),
+  
+  canReadBlog: (authorId, token) =>
+    req('GET', `/followers/${authorId}/can-read`, undefined, token),
 };

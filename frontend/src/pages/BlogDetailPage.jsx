@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/blogApi';
 import { api as stakeholdersApi } from '../api/stakeholdersApi';
+import { api as followersApi } from '../api/followersApi';
 import { Btn, ErrBanner, Icon, ICONS } from '../components';
 import { formatDate } from '../utils/helpers';
 import ReactMarkdown from 'react-markdown';
@@ -11,6 +12,7 @@ import ReactMarkdown from 'react-markdown';
 export default function BlogDetailPage() {
   const { id } = useParams();
   const { token, user } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [commentText, setCommentText] = useState('');
   const [formError, setFormError] = useState(null);
@@ -20,6 +22,28 @@ export default function BlogDetailPage() {
     queryFn: () => api.getBlog(id, token),
     enabled: !!token,
   });
+
+  const { data: canReadData, isLoading: canReadLoading } = useQuery({
+    queryKey: ['can-read-blog', blog?.authorId],
+    queryFn: () => followersApi.canReadBlog(blog.authorId, token),
+    enabled: !!blog?.authorId && !!token,
+  });
+
+  const canRead = canReadData?.canRead ?? false;
+  const isOwnBlog = blog?.authorId === user?.userId;
+
+  const { data: authorProfile } = useQuery({
+     queryKey: ['author-profile-single', blog?.authorId],
+     queryFn: async () => {
+       const result = await stakeholdersApi.getProfiles(blog.authorId);
+       if (Array.isArray(result)) return result[0] ?? null;
+       return result ?? null;
+     },
+     enabled: !!blog?.authorId && !!token,
+     staleTime: 60_000,
+  });
+
+  const authorUsername = authorProfile?.username ?? authorProfile?.Username ?? null;
 
   const { data: comments = [], isLoading: commentsLoading, error: commentsError } = useQuery({
     queryKey: ['blog-comments', id],
@@ -193,6 +217,29 @@ export default function BlogDetailPage() {
 
   if (blogLoading) return <div className="container" style={{ padding: 40 }}>Loading blog…</div>;
   if (blogError) return <div className="container" style={{ padding: 40 }}><ErrBanner>{blogError.message}</ErrBanner></div>;
+
+  if (!isOwnBlog && !canRead && !canReadLoading) {
+  return (
+    <div className="container" style={{ padding: '60px 0 80px', maxWidth: 560 }}>
+      <div className="card p-24 fade-up" style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: 36, marginBottom: 12 }}>🔒</div>
+        <h2 style={{ marginTop: 0 }}>Follow to read</h2>
+        <p className="muted" style={{ marginTop: 8, lineHeight: 1.6 }}>
+          This blog is written by <strong>{authorUsername || 'this author'}</strong>.
+          You need to follow them to read their posts.
+        </p>
+        <div style={{ marginTop: 20, display: 'flex', gap: 10, justifyContent: 'center' }}>
+          <Btn variant="ghost" onClick={() => navigate('/blogs')}>Back to blogs</Btn>
+          {authorUsername && (
+            <Btn variant="primary" onClick={() => navigate(`/${authorUsername}`)}>
+              View profile
+            </Btn>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
   return (
     <div className="container" style={{ padding: '40px 0 80px' }}>
