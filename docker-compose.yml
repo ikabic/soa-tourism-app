@@ -64,10 +64,12 @@ services:
         condition: service_healthy
       followers-app:
         condition: service_started
+    volumes:
+      - ./blog-service/uploads:/app/uploads
   tour-app:
     build:
-      context: ./tour-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./tour-service/Dockerfile
     container_name: tour-app
     networks:
       - servers
@@ -79,6 +81,7 @@ services:
       DB_NAME: ${TOUR_DB_NAME:-tourdb}
       JWT_SECRET: ${JWT_SECRET}
       PURCHASE_SERVICE_URL: http://purchase-app:8083
+      TOUR_SERVICE_GRPC_ADDR: tour-app:50051
       ASPNETCORE_URLS: http://+:8080
     depends_on:
       tour-db:
@@ -122,6 +125,7 @@ services:
       DB_SSLMODE: disable
       JWT_SECRET: ${JWT_SECRET}
       TOUR_SERVICE_URL: http://tour-app:8080
+      TOUR_SERVICE_GRPC_ADDR: tour-app:50051
     depends_on:
       purchase-db:
         condition: service_healthy

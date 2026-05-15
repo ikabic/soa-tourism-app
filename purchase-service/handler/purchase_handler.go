@@ -5,9 +5,9 @@ import (
 	"errors"
 	"net/http"
 
-	"purchase-service/dto"
-	"purchase-service/middleware"
-	"purchase-service/service"
+	"example.com/purchase-service/dto"
+	"example.com/purchase-service/middleware"
+	"example.com/purchase-service/service"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -24,8 +24,7 @@ func (h *PurchaseHandler) GetCart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authHeader := r.Header.Get("Authorization")
-	cart, err := h.Service.GetCart(userID, authHeader)
+	cart, err := h.Service.GetCart(userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -86,8 +85,7 @@ func (h *PurchaseHandler) Checkout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authHeader := r.Header.Get("Authorization")
-	checkout, err := h.Service.Checkout(userID, authHeader)
+	checkout, err := h.Service.Checkout(userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -103,8 +101,7 @@ func (h *PurchaseHandler) GetPurchases(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authHeader := r.Header.Get("Authorization")
-	purchases, err := h.Service.GetPurchases(userID, authHeader)
+	purchases, err := h.Service.GetPurchases(userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

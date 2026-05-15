@@ -3,26 +3,22 @@ package service
 import (
 	"crypto/rand"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"net/http"
-	"strings"
-	"time"
 
-	"purchase-service/dto"
-	"purchase-service/model"
-	"purchase-service/repo"
+	"example.com/purchase-service/dto"
+	grpcclient "example.com/purchase-service/grpc"
+	"example.com/purchase-service/model"
+	"example.com/purchase-service/repo"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 type PurchaseService struct {
-	CartRepo       *repo.CartRepository
-	PurchaseRepo   *repo.PurchaseRepository
-	TourServiceURL string
+	CartRepo     *repo.CartRepository
+	PurchaseRepo *repo.PurchaseRepository
+	TourClient   *grpcclient.TourClient
 }
 
 func (s *PurchaseService) AddToCart(userID uuid.UUID, request dto.AddCartItemRequest, authHeader string) (*dto.CartItemResponse, error) {
@@ -58,7 +54,7 @@ func (s *PurchaseService) AddToCart(userID uuid.UUID, request dto.AddCartItemReq
 		return nil, err
 	}
 
-	published, err := s.verifyTourPublished(tourID, authHeader)
+	published, err := s.verifyTourPublished(tourID)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +77,7 @@ func (s *PurchaseService) AddToCart(userID uuid.UUID, request dto.AddCartItemReq
 	return mapCartItem(cartItem), nil
 }
 
-func (s *PurchaseService) GetCart(userID uuid.UUID, authHeader string) (*dto.CartResponse, error) {
+func (s *PurchaseService) GetCart(userID uuid.UUID) (*dto.CartResponse, error) {
 	items, err := s.CartRepo.FindByUser(userID)
 	if err != nil {
 		return nil, err
@@ -91,7 +87,7 @@ func (s *PurchaseService) GetCart(userID uuid.UUID, authHeader string) (*dto.Car
 	total := 0.0
 	for _, item := range items {
 		if item.TourDescription == "" {
-			desc, err := s.getTourDescription(item.TourID, authHeader)
+			desc, err := s.getTourDescription(item.TourID)
 			if err == nil && desc != "" {
 				item.TourDescription = desc
 				_ = s.CartRepo.Update(&item)
@@ -118,7 +114,7 @@ func (s *PurchaseService) RemoveCartItem(userID, itemID uuid.UUID) error {
 	return s.CartRepo.DeleteByID(userID, itemID)
 }
 
-func (s *PurchaseService) Checkout(userID uuid.UUID, authHeader string) (*dto.CheckoutResponse, error) {
+func (s *PurchaseService) Checkout(userID uuid.UUID) (*dto.CheckoutResponse, error) {
 	items, err := s.CartRepo.FindByUser(userID)
 	if err != nil {
 		return nil, err
@@ -131,7 +127,7 @@ func (s *PurchaseService) Checkout(userID uuid.UUID, authHeader string) (*dto.Ch
 	total := 0.0
 
 	for _, item := range items {
-		published, err := s.verifyTourPublished(item.TourID, authHeader)
+		published, err := s.verifyTourPublished(item.TourID)
 		if err != nil {
 			return nil, err
 		}
@@ -176,7 +172,7 @@ func (s *PurchaseService) Checkout(userID uuid.UUID, authHeader string) (*dto.Ch
 	return &dto.CheckoutResponse{Purchases: purchases, Total: total}, nil
 }
 
-func (s *PurchaseService) GetPurchases(userID uuid.UUID, authHeader string) ([]dto.PurchaseItemResponse, error) {
+func (s *PurchaseService) GetPurchases(userID uuid.UUID) ([]dto.PurchaseItemResponse, error) {
 	purchases, err := s.PurchaseRepo.FindByUser(userID)
 	if err != nil {
 		return nil, err
@@ -185,7 +181,7 @@ func (s *PurchaseService) GetPurchases(userID uuid.UUID, authHeader string) ([]d
 	response := make([]dto.PurchaseItemResponse, 0, len(purchases))
 	for _, purchase := range purchases {
 		if purchase.TourDescription == "" {
-			desc, err := s.getTourDescription(purchase.TourID, authHeader)
+			desc, err := s.getTourDescription(purchase.TourID)
 			if err == nil && desc != "" {
 				purchase.TourDescription = desc
 				_ = s.PurchaseRepo.Update(&purchase)
@@ -201,75 +197,16 @@ func (s *PurchaseService) HasPurchased(userID, tourID uuid.UUID) (bool, error) {
 	return s.PurchaseRepo.Exists(userID, tourID)
 }
 
-func (s *PurchaseService) getTourDescription(tourID uuid.UUID, authHeader string) (string, error) {
-	if s.TourServiceURL == "" {
-		return "", errors.New("tour service url not configured")
-	}
-
-	client := http.Client{Timeout: 8 * time.Second}
-	request, err := http.NewRequest("GET", strings.TrimRight(s.TourServiceURL, "/")+"/tours/"+tourID.String()+"/public", nil)
+func (s *PurchaseService) getTourDescription(tourID uuid.UUID) (string, error) {
+	resp, err := s.TourClient.GetTourPublicInfo(tourID.String())
 	if err != nil {
 		return "", err
 	}
-	request.Header.Set("Authorization", authHeader)
-
-	resp, err := client.Do(request)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("tour service error: %d", resp.StatusCode)
-	}
-
-	var tour struct {
-		Description string `json:"description"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&tour); err != nil {
-		return "", err
-	}
-
-	return tour.Description, nil
+	return resp.Description, nil
 }
 
-func (s *PurchaseService) verifyTourPublished(tourID uuid.UUID, authHeader string) (bool, error) {
-	if s.TourServiceURL == "" {
-		return false, errors.New("tour service url not configured")
-	}
-
-	client := http.Client{Timeout: 8 * time.Second}
-	request, err := http.NewRequest("GET", strings.TrimRight(s.TourServiceURL, "/")+"/tours/published", nil)
-	if err != nil {
-		return false, err
-	}
-	request.Header.Set("Authorization", authHeader)
-
-	resp, err := client.Do(request)
-	if err != nil {
-		return false, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return false, fmt.Errorf("tour service error: %s", strings.TrimSpace(string(body)))
-	}
-
-	var tours []struct {
-		Id string `json:"id"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&tours); err != nil {
-		return false, err
-	}
-
-	for _, tour := range tours {
-		if tour.Id == tourID.String() {
-			return true, nil
-		}
-	}
-
-	return false, nil
+func (s *PurchaseService) verifyTourPublished(tourID uuid.UUID) (bool, error) {
+	return s.TourClient.IsTourPublished(tourID.String())
 }
 
 func generateToken() (string, error) {

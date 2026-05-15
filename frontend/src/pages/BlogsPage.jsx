@@ -235,7 +235,7 @@ export default function BlogsPage() {
             {description.trim() ? (
               <div style={{ marginTop: 24 }}>
                 <div className="eyebrow" style={{ marginBottom: 10 }}>Preview</div>
-                <div className="card" style={{ padding: 18, background: 'var(--paper-deep)', border: '0.5px solid var(--sage-line)' }}>
+                <div className="card blog-markdown" style={{ padding: 18, background: 'var(--paper-deep)', border: '0.5px solid var(--sage-line)' }}>
                   <ReactMarkdown>{description}</ReactMarkdown>
                 </div>
               </div>
@@ -324,8 +324,8 @@ function BlogCard({ blog, index, authorById }) {
             <span className="faint">by {authorName}</span>
             <span className="faint">{blog.likesCount ?? 0} likes</span>
           </div>
-          <h3 style={{ margin: 0 }}>{blog.title}</h3>
-          <p className="muted" style={{ marginTop: 10, lineHeight: 1.6 }}>{excerpt.length > 180 ? `${excerpt.slice(0, 180)}…` : excerpt}</p>
+          <h3 className="text-break" style={{ margin: 0 }}>{blog.title}</h3>
+          <p className="muted text-break" style={{ marginTop: 10, lineHeight: 1.6 }}>{excerpt.length > 180 ? `${excerpt.slice(0, 180)}…` : excerpt}</p>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           {imageUrls.length > 0 ? (

@@ -1,13 +1,29 @@
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using TourService.Clients;
 using TourService.Data;
+using TourService.Grpc;
 using TourService.Middleware;
 using TourService.Repositories;
 using TourService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ListenAnyIP(8080, listenOptions =>
+    {
+        listenOptions.Protocols = HttpProtocols.Http1;
+    });
+
+    options.ListenAnyIP(50051, listenOptions =>
+    {
+        listenOptions.UseHttps("tourapp.pfx", "password");
+        listenOptions.Protocols = HttpProtocols.Http2;
+    });
+});
 
 var dbHost = Environment.GetEnvironmentVariable("DB_HOST") ?? "localhost";
 var dbPort = Environment.GetEnvironmentVariable("DB_PORT") ?? "5432";
@@ -32,6 +48,8 @@ builder.Services.AddHttpClient<IPurchaseClient, PurchaseClient>(c =>
 
 builder.Services.AddScoped<ITourRepository, TourRepository>();
 builder.Services.AddScoped<ITourService, TourService.Services.TourService>();
+
+builder.Services.AddGrpc();
 
 builder.Services.AddGrpcClient<TourService.Grpc.UserService.UserServiceClient>(o =>
 {
@@ -68,6 +86,7 @@ using (var scope = app.Services.CreateScope())
 
 app.UseCors();
 app.UseMiddleware<JwtMiddleware>();
+app.MapGrpcService<TourServiceGrpc>();
 app.MapControllers();
 
 app.Run();
