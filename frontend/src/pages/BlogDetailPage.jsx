@@ -5,9 +5,10 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../api/blogApi';
 import { api as stakeholdersApi } from '../api/stakeholdersApi';
 import { api as followersApi } from '../api/followersApi';
-import { Btn, ErrBanner, Icon, ICONS } from '../components';
+import { Btn, ErrBanner, Icon, ICONS, ProfileUsername } from '../components';
 import { formatDate } from '../utils/helpers';
 import ReactMarkdown from 'react-markdown';
+import BlockRequestModal from '../components/BlockRequestModal';
 
 export default function BlogDetailPage() {
   const { id } = useParams();
@@ -218,28 +219,7 @@ export default function BlogDetailPage() {
   if (blogLoading) return <div className="container" style={{ padding: 40 }}>Loading blog…</div>;
   if (blogError) return <div className="container" style={{ padding: 40 }}><ErrBanner>{blogError.message}</ErrBanner></div>;
 
-  if (!isOwnBlog && !canRead && !canReadLoading) {
-  return (
-    <div className="container" style={{ padding: '60px 0 80px', maxWidth: 560 }}>
-      <div className="card p-24 fade-up" style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: 36, marginBottom: 12 }}>🔒</div>
-        <h2 style={{ marginTop: 0 }}>Follow to read</h2>
-        <p className="muted" style={{ marginTop: 8, lineHeight: 1.6 }}>
-          This blog is written by <strong>{authorUsername || 'this author'}</strong>.
-          You need to follow them to read their posts.
-        </p>
-        <div style={{ marginTop: 20, display: 'flex', gap: 10, justifyContent: 'center' }}>
-          <Btn variant="ghost" onClick={() => navigate('/blogs')}>Back to blogs</Btn>
-          {authorUsername && (
-            <Btn variant="primary" onClick={() => navigate(`/${authorUsername}`)}>
-              View profile
-            </Btn>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
+ 
 
   return (
     <div className="container" style={{ padding: '40px 0 80px' }}>
@@ -250,7 +230,7 @@ export default function BlogDetailPage() {
           <div className="row gap-8 wrap" style={{ marginTop: 10, color: 'var(--ink-faint)', fontSize: 13 }}>
             <span>{formatDate(blog.createdAt)}</span>
             <span>·</span>
-            <span>by {authorName}</span>
+            <span>by&nbsp;<ProfileUsername username={authorName} isInline={true} color='var(--ink-faint)' /></span>
             <span>·</span>
             <span>{likes} like{likes !== 1 ? 's' : ''}</span>
           </div>
@@ -399,7 +379,7 @@ export default function BlogDetailPage() {
             <div key={comment.id} className="card fade-up" style={{ padding: 18 }}>
               <div className="row between" style={{ marginBottom: 10, gap: 12, alignItems: 'center' }}>
                 <div>
-                  <strong>{authorById.get(comment.authorId) || comment.authorId}</strong>
+                  <ProfileUsername username={authorById.get(comment.authorId) || comment.authorId} isInline={true} />
                   <div className="faint" style={{ fontSize: 12 }}>{formatDate(comment.createdAt)}{comment.updatedAt && comment.updatedAt !== comment.createdAt ? ' · edited' : ''}</div>
                 </div>
               </div>
@@ -408,6 +388,9 @@ export default function BlogDetailPage() {
           ))}
         </div>
       )}
+
+      {!isOwnBlog && !canRead && !canReadLoading && <BlockRequestModal icon={ICONS.lock} title={'Follow to read'} message={<> This blog is written by <strong>{authorUsername || 'this author'}</strong>. You need to follow them to read their posts.</>}
+        onClose={() => navigate('/blogs')} cancelLabel={'Back to blogs'} onConfirm={() => navigate(`/${authorUsername}`)} confirmLabel={'View profile'} />}
     </div>
   );
 }
