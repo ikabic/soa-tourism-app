@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/blogApi';
 import { api as stakeholdersApi } from '../api/stakeholdersApi';
-import { Btn, ErrBanner, Icon, ICONS } from '../components';
+import { Btn, ErrBanner, Icon, ICONS, ProfileUsername } from '../components';
 import { formatDate } from '../utils/helpers';
 import ReactMarkdown from 'react-markdown';
 
@@ -321,7 +321,7 @@ function BlogCard({ blog, index, authorById }) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="row gap-8 wrap" style={{ alignItems: 'center', marginBottom: 10 }}>
             <span className="eyebrow">{formatDate(blog.createdAt)}</span>
-            <span className="faint">by {authorName}</span>
+            <span className="faint">by <ProfileUsername username={authorName} isInline={true} color='var(--ink-soft)' /></span>
             <span className="faint">{blog.likesCount ?? 0} likes</span>
           </div>
           <h3 style={{ margin: 0 }}>{blog.title}</h3>

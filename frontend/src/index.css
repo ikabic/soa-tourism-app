@@ -510,3 +510,42 @@ button:hover {
   color: var(--ink-soft);
 }
 .empty h3 { color: var(--sage-darker); margin-bottom: 6px; }
+
+.profile-username {
+  font-family: var(--sans);
+  font-weight: 600;
+  opacity: 90%;
+}
+
+.profile-username:hover {
+  opacity: 100%;
+  cursor: pointer;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: color-mix(in oklch, var(--ink) 45%, transparent);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  animation: fadeUp 0.2s ease both;
+}
+
+.modal-overlay.restriction {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.modal {
+  background: var(--card);
+  border: 0.5px solid var(--sage-line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-pop);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}

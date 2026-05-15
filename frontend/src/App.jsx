@@ -70,7 +70,7 @@ function Nav() {
             <Btn variant="ghost" icon="cart" ariaLabel="Open cart" iconOnly onClick={() => navigate('/cart')} />
           )}
           <div className="nav-user">
-            <span className="muted" style={{ fontSize: 13 }}>{user?.username}</span>
+            <span className="muted" style={{ fontSize: 13, cursor: 'pointer', fontWeight: 500 }} onClick={() => navigate(`/${user?.username}`)}>{user?.username}</span>
             <div className="avatar" onClick={() => navigate(`/${user?.username}`)}>{initials}</div>
           </div>
           <Btn variant="ghost" size="sm" icon="log" onClick={() => { logout(); navigate('/login'); }}>

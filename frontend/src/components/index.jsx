@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { difficultyClass, difficultyTicks, formatDuration } from '../utils/helpers';
 
 export const ICONS = {
@@ -28,6 +29,7 @@ export const ICONS = {
   car:     "M4 13l2-5h10l2 5M3 13h16v4a1 1 0 0 1-1 1h-1v-1H7v1H6a1 1 0 0 1-1-1v-4Zm3 3h2m6 0h2",
   compass: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm0-3 2-7 5-2-2 7-5 2Z",
   sun:     "M12 4V2m0 20v-2M4 12H2m20 0h-2m-3-7-1.5 1.5M6.5 6.5 5 5m0 14 1.5-1.5m11 0L19 19M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z",
+  lock:    "M12 1a5 5 0 0 0-5 5v5H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V6a5 5 0 0 0-5-5Zm-3 10V6a3 3 0 1 1 6 0v5H9Zm3 3a1.5 1.5 0 0 1 1 2.6V18h-2v-1.4A1.5 1.5 0 0 1 12 14Z",
 };
 
 export function Icon({ d, size = 18, stroke = 1.5, fill = 'none', style }) {
@@ -162,4 +164,10 @@ export function ErrBanner({ children, onClose }) {
       )}
     </div>
   );
+}
+
+export function ProfileUsername({ username, fontSize = 14, color = 'var(--ink)', isInline = false }) {
+  const navigate = useNavigate();
+
+  return <div className='profile-username' style={{ color: color, fontSize: fontSize, display: isInline ? 'inline' : 'block' }} onClick={() => navigate(`/${username}`)}> @{username} </div>
 }

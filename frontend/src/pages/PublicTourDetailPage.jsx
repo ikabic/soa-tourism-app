@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { MapContainer, TileLayer, Marker, Popup, Tooltip, useMap } from 'react-leaflet';
 import { api } from '../api/tourApi';
 import { useAuth } from '../context/AuthContext';
-import { Btn, Difficulty, Tag, TransportPill, ErrBanner, Icon, ICONS } from '../components';
+import { Btn, Difficulty, Tag, TransportPill, ErrBanner, Icon, ICONS, ProfileUsername } from '../components';
 import { formatDate } from '../utils/helpers';
 
 import L from 'leaflet';
@@ -100,7 +100,7 @@ function ReviewCard({ review }) {
             {review.touristUsername?.[0]?.toUpperCase() || '?'}
           </div>
           <div>
-            <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--ink)' }}>{review.touristUsername}</div>
+            <ProfileUsername fontSize={14} username={review.touristUsername}/>
             <div className="faint" style={{ fontSize: 12 }}>Visited {formatDate(review.visitedAt)}</div>
           </div>
         </div>

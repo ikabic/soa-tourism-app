@@ -3,7 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { api as followersApi } from '../api/followersApi';
 import { api as stakeholdersApi } from '../api/stakeholdersApi';
-import { Btn, Icon, ICONS } from '.';
+import { Btn, Icon, ICONS, ProfileUsername } from '.';
+import { useNavigate } from 'react-router-dom';
 
 export default function RecommendationsBanner() {
   const { token, user } = useAuth();
@@ -71,6 +72,7 @@ export default function RecommendationsBanner() {
 
 function RecommendationCard({ profile, onFollow, isPending }) {
   const [followed, setFollowed] = useState(false);
+  const navigate = useNavigate();
 
   const handleFollow = () => {
     setFollowed(true);
@@ -90,13 +92,13 @@ function RecommendationCard({ profile, onFollow, isPending }) {
       textAlign: 'center',
       boxShadow: 'var(--shadow-card)',
     }}>
-      <div style={{
+      <div onClick={() => navigate(`/${profile.username}`)} style={{
         width: 44, height: 44, borderRadius: '50%',
         background: 'var(--sage)',
         color: 'var(--paper)',
         display: 'grid', placeItems: 'center',
         fontFamily: 'var(--serif)', fontSize: 16, fontWeight: 600,
-        overflow: 'hidden', flexShrink: 0,
+        overflow: 'hidden', flexShrink: 0, cursor: 'pointer'
       }}>
         {profile.avatar
           ? <img src={`http://localhost:8080${profile.avatar}`} alt={profile.username}
@@ -104,11 +106,9 @@ function RecommendationCard({ profile, onFollow, isPending }) {
           : initials}
       </div>
       <div style={{ minWidth: 0, width: '100%' }}>
-        <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {profile.username}
-        </div>
+        <ProfileUsername fontSize={13} username={profile.username} />
         {(profile.name || profile.last_name) && (
-          <div className="faint" style={{ fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <div className="faint" style={{ fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'var(--sans)' }}>
             {[profile.name, profile.last_name].filter(Boolean).join(' ')}
           </div>
         )}
