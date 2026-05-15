@@ -86,4 +86,10 @@ export const api = {
 
   getPurchases: (token) =>
     req('GET', '/purchase/purchases', undefined, token),
+
+  getReviews: (tourId, token) =>
+    req('GET', `/tours/tours/${tourId}/reviews`, undefined, token),
+
+  createReview: (tourId, data, token) =>
+    req('POST', `/tours/tours/${tourId}/reviews`, data, token),
 };
