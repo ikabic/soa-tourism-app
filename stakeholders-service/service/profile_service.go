@@ -17,7 +17,7 @@ type ProfileService struct {
 func (service *ProfileService) GetProfile(username string, userId uuid.UUID) (*dto.ProfileResponse, error) {
 	var profile *model.Profile
 	var err error
-	
+
 	if username != "" {
 		profile, err = service.Repo.FindByUsername(username)
 	} else {
@@ -30,6 +30,7 @@ func (service *ProfileService) GetProfile(username string, userId uuid.UUID) (*d
 
 	resp := &dto.ProfileResponse{
 		ID:               profile.UserID.String(),
+		Username:         username,
 		Name:             profile.Name,
 		LastName:         profile.LastName,
 		Avatar:           profile.Avatar,
