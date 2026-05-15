@@ -93,7 +93,7 @@ export default function ProfilePage() {
                             <h1 className="profile-name">{displayName}</h1>
                             {isOwn && <span className="profile-own-badge">You</span>}
                         </div>
-                        <div className="profile-username">@{user.username}</div>
+                        <div className="profile-username">@{profile.username}</div>
                         <p className={`profile-motto ${!profile?.motto ? 'is-placeholder' : ''}`}>
                             {profile?.motto ? `“${profile.motto}”` : 'No motto set'}
                         </p>
