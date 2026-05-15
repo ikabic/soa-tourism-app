@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '../api/tourApi';
 import { useAuth } from '../context/AuthContext';
 import { Btn, Difficulty, Tag, TransportPill, ErrBanner, Icon, ICONS, StatusBadge } from '../components';
+import RecommendationsBanner from '../components/RecommendationsBanner';
 
 export default function BrowseToursPage() {
   const { token } = useAuth();
@@ -42,6 +43,8 @@ export default function BrowseToursPage() {
           Hand-picked tours from local guides. The first stop is on the map — the rest is yours to discover.
         </p>
       </div>
+
+      <RecommendationsBanner />
 
       <div className="card p-16 fade-up" style={{
         display: 'grid', gridTemplateColumns: '1fr auto auto auto',
