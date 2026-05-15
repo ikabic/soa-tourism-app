@@ -256,7 +256,7 @@ export default function BlogDetailPage() {
         </div>
       </div>
 
-      <div className="card fade-up" style={{ padding: 22, marginBottom: 26 }}>
+      <div className="card fade-up text-break blog-markdown" style={{ padding: 22, marginBottom: 26 }}>
         <ReactMarkdown>{blog.description}</ReactMarkdown>
       </div>
 
@@ -383,7 +383,7 @@ export default function BlogDetailPage() {
                   <div className="faint" style={{ fontSize: 12 }}>{formatDate(comment.createdAt)}{comment.updatedAt && comment.updatedAt !== comment.createdAt ? ' · edited' : ''}</div>
                 </div>
               </div>
-              <p style={{ margin: 0, whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>{comment.content}</p>
+              <p className="text-break" style={{ margin: 0, whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>{comment.content}</p>
             </div>
           ))}
         </div>
