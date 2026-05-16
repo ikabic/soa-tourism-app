@@ -1,3 +1,10 @@
+x-logging: &fluent-bit
+  driver: fluentd
+  options:
+    fluentd-address: ${FLUENT_BIT_ADDRESS:-127.0.0.1}:24224
+    fluentd-async: "true"
+    fluentd-max-retries: "3"
+
 services:
   stakeholders-app:
     build:
@@ -22,6 +29,7 @@ services:
         condition: service_healthy
     volumes:
       - ./stakeholders-service/uploads:/app/stakeholders-service/uploads
+    logging: *fluent-bit
 
   stakeholders-db:
     container_name: stakeholders-db
@@ -42,6 +50,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    logging: *fluent-bit
 
   blog-app:
     build:
@@ -66,6 +75,8 @@ services:
         condition: service_started
     volumes:
       - ./blog-service/uploads:/app/uploads
+    logging: *fluent-bit
+
   tour-app:
     build:
       context: .
@@ -89,6 +100,7 @@ services:
         condition: service_healthy
       purchase-app:
         condition: service_started
+    logging: *fluent-bit
 
   tour-db:
     container_name: tour-db
@@ -109,6 +121,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    logging: *fluent-bit
 
   purchase-app:
     build:
@@ -132,6 +145,7 @@ services:
         condition: service_healthy
     ports:
       - "8086:8083"
+    logging: *fluent-bit
 
   purchase-db:
     container_name: purchase-db
@@ -152,6 +166,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    logging: *fluent-bit
 
   api-gateway:
     image: nginx:stable-alpine
@@ -167,6 +182,7 @@ services:
       - stakeholders-app
       - tour-app
       - followers-app
+      - fluent-bit
 
   blog-db:
     container_name: blog-db
@@ -187,6 +203,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    logging: *fluent-bit
     
   followers-app:
     build:
@@ -204,6 +221,7 @@ services:
     depends_on:
       followers-db:
         condition: service_healthy
+    logging: *fluent-bit
 
   followers-db:
     container_name: followers-db
@@ -223,6 +241,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+    logging: *fluent-bit
 
   prometheus:
     image: prom/prometheus:latest
@@ -287,6 +306,23 @@ services:
       - "4317:4317"
     environment:
       COLLECTOR_OTLP_ENABLED: "true"
+
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    networks:
+      - servers
+
+  fluent-bit:
+    image: grafana/fluent-bit-plugin-loki:latest
+    container_name: fluent-bit
+    volumes:
+      - ./monitoring/fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf
+    ports:
+      - "24224:24224"
+      - "24224:24224/udp"
+    networks:
+      - servers
 
 volumes:
   stakeholders_pg_data:
