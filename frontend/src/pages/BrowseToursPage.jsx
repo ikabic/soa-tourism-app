@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../api/tourApi';
 import { useAuth } from '../context/AuthContext';
-import { Btn, Difficulty, Tag, TransportPill, ErrBanner, Icon, ICONS, StatusBadge } from '../components';
+import { Btn, Difficulty, Tag, TransportPill, ErrBanner, Icon, ICONS, StatusBadge, ProfileUsername } from '../components';
 import RecommendationsBanner from '../components/RecommendationsBanner';
 
 export default function BrowseToursPage() {
@@ -136,6 +136,9 @@ function PublishedCard({ tour, idx }) {
           <span style={{ fontFamily: 'var(--serif)', fontSize: 13, color: 'var(--sage-darker)', marginLeft: 'auto' }}>€{tour.price}</span>
         </div>
         <h3 style={{ marginTop: 2 }}>{tour.name}</h3>
+        {tour.authorUsername && (
+          <span className="faint" style={{ fontSize: 13 }}>by <ProfileUsername username={tour.authorUsername} isInline={true} color='var(--ink-soft)' /></span>
+        )}
         <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.55 }}>{tour.description}</p>
         <div className="row gap-6 wrap" style={{ marginTop: 2 }}>
           {tour.tags.slice(0, 4).map((t) => <Tag key={t}>{t}</Tag>)}
@@ -191,6 +194,9 @@ function PublishedRow({ tour, idx }) {
           </span>
         </div>
         <h3>{tour.name}</h3>
+        {tour.authorUsername && (
+          <span className="faint" style={{ fontSize: 13 }}>by <ProfileUsername username={tour.authorUsername} isInline={true} color='var(--ink-soft)' /></span>
+        )}
         <p className="muted" style={{ fontSize: 14, lineHeight: 1.55 }}>{tour.description}</p>
         <div className="row gap-6 wrap">{tour.tags.map((t) => <Tag key={t}>{t}</Tag>)}</div>
         <div className="row gap-8 wrap" style={{ marginTop: 6 }}>
