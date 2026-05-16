@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { MapContainer, TileLayer, Marker, Popup, Tooltip, Circle, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Tooltip, Circle, useMapEvents, useMap } from 'react-leaflet';
 import { api } from '../api/tourApi';
 import { useAuth } from '../context/AuthContext';
 import { Btn, ErrBanner, Icon, ICONS } from '../components';
@@ -25,6 +25,45 @@ function makeTouristIcon() {
     iconSize: [18, 18],
     iconAnchor: [9, 9],
   });
+}
+
+function RouteLayer({ keyPoints }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (keyPoints.length < 2) return;
+
+    const waypoints = keyPoints.map((kp) =>
+      L.latLng(kp.latitude, kp.longitude)
+    );
+
+    const control = L.Routing.control({
+      waypoints,
+      routeWhileDragging: false,
+      addWaypoints: false,
+      draggableWaypoints: false,
+      fitSelectedRoutes: false,
+      show: false,
+      lineOptions: { styles: [{ color: '#5a7a5a', weight: 3, opacity: 0.7 }], },
+      createMarker: () => null,
+    });
+
+    const orig = control._clearLines.bind(control);
+    control._clearLines = function () {
+      if (this._map) orig();
+    };
+
+    control.addTo(map);
+
+    return () => {
+      try { control.getPlan().setWaypoints([]); } catch (_) {}
+      try { map.removeControl(control); } catch (_) {}
+    };
+
+    return () => { map.removeControl(control) };
+  }, [keyPoints.map((k) => `${k.id}-${k.latitude}-${k.longitude}`).join(',')]);
+
+  return null;
 }
 
 function MapClickHandler({ onMapClick }) {
@@ -267,6 +306,7 @@ export default function ActiveTourPage() {
                   </Popup>
                 </Marker>
               ))}
+              {keyPoints.length > 1 && <RouteLayer keyPoints={keyPoints} />}
               {currentPosition && (
                 <>
                   <Marker position={[currentPosition.lat, currentPosition.lng]} icon={makeTouristIcon()}>
