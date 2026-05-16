@@ -1,5 +1,9 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /app/tour-service
+COPY tour-service/*.csproj ./
+RUN dotnet restore
 WORKDIR /app
+COPY saga /saga/
 COPY proto ./proto
 COPY tour-service ./tour-service
 WORKDIR /app/tour-service
@@ -12,6 +16,7 @@ RUN dotnet publish -c Release -o /out
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
 COPY --from=build /out .
+COPY --from=build /saga /saga
 COPY --from=build /app/tour-service/tourapp.pfx .
 EXPOSE 8080 50051
 ENTRYPOINT ["dotnet", "tour-service.dll"]

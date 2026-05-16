@@ -11,11 +11,13 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"stakeholders-service.xws.com/dto"
 	"stakeholders-service.xws.com/model"
+	"stakeholders-service.xws.com/orchestrator"
 	"stakeholders-service.xws.com/repo"
 )
 
 type UserService struct {
-	Repo *repo.UserRepository
+	Repo         *repo.UserRepository
+	Orchestrator *orchestrator.BlockUserOrchestrator
 }
 
 func (service *UserService) Register(request dto.RegisterRequest) error {
@@ -98,5 +100,14 @@ func (s *UserService) GetAllUsers() ([]model.User, error) {
 }
 
 func (s *UserService) BlockUser(userID string) error {
-	return s.Repo.BlockUser(userID)
+	id, err := uuid.Parse(userID)
+	if err != nil {
+		return err
+	}
+
+	return s.Orchestrator.Start(&model.User{ID: id})
+}
+
+func (s *UserService) SetBlocked(userID uuid.UUID, blocked bool) error {
+	return s.Repo.BlockUser(userID.String(), blocked)
 }

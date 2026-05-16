@@ -5,11 +5,14 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"saga"
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+
+	nats "saga/nats"
 
 	grpcclient "example.com/purchase-service/grpc"
 	"example.com/purchase-service/handler"
@@ -68,6 +71,36 @@ func initDatabase() *gorm.DB {
 	return database
 }
 
+func initPublisher(subject string) saga.Publisher {
+	publisher, err := nats.NewNATSPublisher(os.Getenv("NATS_HOST"), os.Getenv("NATS_PORT"), os.Getenv("NATS_USER"), os.Getenv("NATS_PASSWORD"), subject)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return publisher
+}
+
+func initSubscriber(subject, queueGroup string) saga.Subscriber {
+	subscriber, err := nats.NewNATSSubscriber(os.Getenv("NATS_HOST"), os.Getenv("NATS_PORT"), os.Getenv("NATS_USER"), os.Getenv("NATS_PASSWORD"), subject, queueGroup)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return subscriber
+}
+
+func initBlockUserHandler(purchaseService *service.PurchaseService, publisher saga.Publisher, subscriber saga.Subscriber) {
+	_, err := handler.NewBlockUserCommandHandler(purchaseService, publisher, subscriber)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func initArchiveTourHandler(purchaseService *service.PurchaseService, publisher saga.Publisher, subscriber saga.Subscriber) {
+	_, err := handler.NewArchiveTourCommandHandler(purchaseService, publisher, subscriber)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 func main() {
 	database := initDatabase()
 	if database == nil {
@@ -83,6 +116,14 @@ func main() {
 		TourClient:   tourClient,
 	}
 	purchaseHandler := &handler.PurchaseHandler{Service: purchaseService}
+
+	commandSubscriber := initSubscriber("block_user.command", "purchases")
+	replyPublisher := initPublisher("block_user.reply")
+	initBlockUserHandler(purchaseService, replyPublisher, commandSubscriber)
+
+	commandSubscriber = initSubscriber("archive_tour.command", "purchases")
+	replyPublisher = initPublisher("archive_tour.reply")
+	initArchiveTourHandler(purchaseService, replyPublisher, commandSubscriber)
 
 	go grpcclient.StartGRPCServer(purchaseRepo)
 

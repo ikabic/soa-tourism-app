@@ -22,11 +22,17 @@ services:
       DB_SSLMODE: disable
       JWT_SECRET: ${JWT_SECRET}
       FOLLOWERS_GRPC_ADDR: followers-app:50051
+      NATS_HOST: ${NATS_HOST:-host}
+      NATS_PORT: ${NATS_PORT:-4222}
+      NATS_USER: ${NATS_USER:-nats}
+      NATS_PASSWORD: ${NATS_PASSWORD:-nats}
     depends_on:
       followers-app:
         condition: service_started
       stakeholders-db:
         condition: service_healthy
+      nats:
+        condition: service_started
     volumes:
       - ./stakeholders-service/uploads:/app/stakeholders-service/uploads
     logging: *fluent-bit
@@ -80,7 +86,7 @@ services:
   tour-app:
     build:
       context: .
-      dockerfile: ./tour-service/Dockerfile
+      dockerfile: tour-service/Dockerfile
     container_name: tour-app
     networks:
       - servers
@@ -95,11 +101,17 @@ services:
       STAKEHOLDERS_GRPC_ADDR: http://stakeholders-app:50051
       TOUR_SERVICE_GRPC_ADDR: tour-app:50051
       ASPNETCORE_URLS: http://+:8080
+      NATS_HOST: ${NATS_HOST:-nats}
+      NATS_PORT: ${NATS_PORT:-4222}
+      NATS_USER: ${NATS_USER:-nats}
+      NATS_PASSWORD: ${NATS_PASSWORD:-nats}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
     depends_on:
       tour-db:
         condition: service_healthy
       purchase-app:
+        condition: service_started
+      nats:
         condition: service_started
     logging: *fluent-bit
 
@@ -140,10 +152,16 @@ services:
       DB_SSLMODE: disable
       JWT_SECRET: ${JWT_SECRET}
       TOUR_SERVICE_URL: http://tour-app:8080
+      NATS_HOST: ${NATS_HOST:-host}
+      NATS_PORT: ${NATS_PORT:-4222}
+      NATS_USER: ${NATS_USER:-nats}
+      NATS_PASSWORD: ${NATS_PASSWORD:-nats}
       TOUR_SERVICE_GRPC_ADDR: tour-app:50051
     depends_on:
       purchase-db:
         condition: service_healthy
+      nats:
+        condition: service_started
     ports:
       - "8086:8083"
     logging: *fluent-bit
@@ -183,6 +201,7 @@ services:
       - stakeholders-app
       - tour-app
       - followers-app
+      - purchase-app
       - fluent-bit
 
   blog-db:
@@ -219,9 +238,15 @@ services:
       NEO4J_PASSWORD: ${NEO4J_PASSWORD:-password123}
       JWT_SECRET: ${JWT_SECRET}
       GRPC_PORT: 50051
+      NATS_HOST: ${NATS_HOST:-host}
+      NATS_PORT: ${NATS_PORT:-4222}
+      NATS_USER: ${NATS_USER:-nats}
+      NATS_PASSWORD: ${NATS_PASSWORD:-nats}
     depends_on:
       followers-db:
         condition: service_healthy
+      nats:
+        condition: service_started
     logging: *fluent-bit
 
   followers-db:
@@ -297,6 +322,14 @@ services:
       - /sys:/host/sys:ro
       - /:/host/root:ro
 
+  nats:
+    image: nats
+    container_name: nats
+    restart: on-failure
+    networks:
+      - servers
+    command: ["-m", "8222", "--user", "${NATS_USER:-nats}", "--pass", "${NATS_PASSWORD:-nats}"]
+    
   jaeger:
     image: jaegertracing/all-in-one:latest
     container_name: jaeger

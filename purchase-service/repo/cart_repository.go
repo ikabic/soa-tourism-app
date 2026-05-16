@@ -37,6 +37,13 @@ func (repo *CartRepository) DeleteByID(userID, id uuid.UUID) error {
 	return repo.DB.Where("user_id = ? AND id = ?", userID, id).Delete(&model.CartItem{}).Error
 }
 
+func (repo *CartRepository) DeleteByTourID(id uuid.UUID) error {
+	return repo.DB.Transaction(func(tx *gorm.DB) error {
+        result := tx.Where("tour_id = ?", id).Delete(&model.CartItem{})
+        return result.Error
+	})
+}
+
 func (repo *CartRepository) DeleteByUser(userID uuid.UUID) error {
 	return repo.DB.Where("user_id = ?", userID).Delete(&model.CartItem{}).Error
 }

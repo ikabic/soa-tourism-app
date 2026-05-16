@@ -7,6 +7,7 @@ using TourService.Data;
 using TourService.Grpc;
 using TourService.Middleware;
 using TourService.Repositories;
+using TourService.Saga;
 using TourService.Services;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -58,7 +59,6 @@ builder.Services.AddGrpcClient<TourService.Grpc.UserService.UserServiceClient>(o
 builder.Services.AddSingleton<IStakeholdersClient, StakeholdersGrpcClient>();
 builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
-
 builder.Services.AddScoped<ITourExecutionRepository, TourExecutionRepository>();
 builder.Services.AddScoped<ITourExecutionService, TourExecutionService>();
 
@@ -78,6 +78,16 @@ builder.Services.AddOpenTelemetry()
                 Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT")
                 ?? "http://jaeger:4317");
         }));
+
+var natsHost = Environment.GetEnvironmentVariable("NATS_HOST") ?? "nats";
+var natsPort = Environment.GetEnvironmentVariable("NATS_PORT") ?? "4222";
+var natsUser = Environment.GetEnvironmentVariable("NATS_USER") ?? "nats";
+var natsPassword = Environment.GetEnvironmentVariable("NATS_PASSWORD") ?? "nats";
+
+builder.Services.AddSingleton<INatsBus>(new NatsBus(natsHost, natsPort, natsUser, natsPassword));
+builder.Services.AddSingleton<IArchiveTourHandler, ArchiveTourHandler>();
+builder.Services.AddSingleton<ArchiveTourOrchestrator>();
+builder.Services.AddSingleton<IArchiveTourOrchestrator>(sp => sp.GetRequiredService<ArchiveTourOrchestrator>());
 
 var app = builder.Build();
 
@@ -131,6 +141,8 @@ using (var scope = app.Services.CreateScope())
        );
     ");
 }
+
+app.Services.GetRequiredService<ArchiveTourOrchestrator>().Start();
 
 app.UseCors();
 app.UseMiddleware<JwtMiddleware>();

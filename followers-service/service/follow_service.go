@@ -2,12 +2,14 @@ package service
 
 import (
 	"errors"
+	"log"
 
 	"followers-service.xws.com/repo"
 )
 
 type FollowService struct {
-	Repo *repo.FollowRepository
+	Repo         *repo.FollowRepository
+	SnapshotRepo *repo.SagaSnapshotRepository
 }
 
 func (s *FollowService) Follow(followerID, followedID string) error {
@@ -38,4 +40,45 @@ func (s *FollowService) CanReadBlog(followerID, authorID string) (bool, error) {
 		return true, nil
 	}
 	return s.Repo.IsFollowing(followerID, authorID)
+}
+
+func (s *FollowService) RemoveUserRelations(userID string) error {
+	if err := s.SnapshotRepo.Save(userID); err != nil {
+		return err
+	}
+
+	if err := s.Repo.RemoveUserRelations(userID); err != nil {
+		s.SnapshotRepo.Delete(userID)
+		return err
+	}
+
+	return nil
+}
+
+func (s *FollowService) RestoreRelations(userID string) error {
+	snap, err := s.SnapshotRepo.Get(userID)
+	if err != nil {
+		return err
+	}
+	
+	if snap == nil {
+		return nil
+	}
+
+	if err := s.Repo.RestoreRelations(userID, snap.WasFollowing, snap.WasFollowedBy); err != nil {
+		return err
+	}
+
+	if err := s.SnapshotRepo.Delete(userID); err != nil {
+		log.Printf("WARN: snapshot delete failed for user %s after successful restore: %v", userID, err)
+	}
+
+	return nil
+}
+
+func (s *FollowService) DropSnapshot(userID string) error {
+	if err := s.SnapshotRepo.Delete(userID); err != nil {
+		log.Printf("WARN: snapshot delete failed for user %s after successful restore: %v", userID, err)
+	}
+	return nil
 }

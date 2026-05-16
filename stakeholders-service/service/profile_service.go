@@ -10,7 +10,7 @@ import (
 
 type ProfileService struct {
 	Repo         *repo.ProfileRepository
-	UserRepo     *repo.UserRepository
+	SnapshotRepo *repo.SagaSnapshotRepository
 	FollowClient *grpcclient.FollowClient
 }
 
@@ -114,4 +114,46 @@ func (service *ProfileService) UpdateProfile(userID uuid.UUID, request dto.Profi
 	}
 
 	return service.Repo.Update(profile)
+}
+
+func (s *ProfileService) AnonymizeProfile(userID uuid.UUID) error {
+	profile, err := s.Repo.FindByUser(userID)
+	if err != nil {
+		return err
+	}
+
+	if err := s.SnapshotRepo.Save(userID, profile); err != nil {
+		return err
+	}
+
+	if err := s.Repo.AnonymizeProfile(userID); err != nil {
+		s.SnapshotRepo.Delete(userID)
+		return err
+	}
+
+	return nil
+}
+
+func (s *ProfileService) RestoreProfile(userID uuid.UUID) error {
+	snap, err := s.SnapshotRepo.Get(userID)
+	if err != nil {
+		return err
+	}
+
+	if err := s.Repo.RestoreProfile(userID, model.Profile{
+		Name:      snap.Name,
+		LastName:  snap.LastName,
+		Biography: snap.Biography,
+		Motto:     snap.Motto,
+		Avatar:    snap.Avatar,
+	}); err != nil {
+		return err
+	}
+
+	s.SnapshotRepo.Delete(userID)
+	return nil
+}
+
+func (s *ProfileService) DropSnapshot(userID uuid.UUID) error {
+	return s.SnapshotRepo.Delete(userID)
 }
