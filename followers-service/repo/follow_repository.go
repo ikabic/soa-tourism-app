@@ -115,3 +115,50 @@ func (r *FollowRepository) IsFollowing(followerID, followedID string) (bool, err
 	}
 	return result.(bool), nil
 }
+
+func (r *FollowRepository) RemoveUserRelations(userID string) error {
+	ctx := context.Background()
+	session := r.Driver.NewSession(ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeWrite})
+	defer session.Close(ctx)
+
+	_, err := session.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		_, err := tx.Run(ctx, `
+			MATCH (u:User {id: $userId})-[r:FOLLOWS]-(:User)
+			DELETE r
+		`, map[string]any{"userId": userID})
+		return nil, err
+	})
+	return err
+}
+
+func (r *FollowRepository) RestoreRelations(userID string, wasFollowing []string, wasFollowedBy []string) error {
+	ctx := context.Background()
+	session := r.Driver.NewSession(ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeWrite})
+	defer session.Close(ctx)
+
+	_, err := session.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		if _, err := tx.Run(ctx, `
+            UNWIND $followed AS followedID
+            MERGE (a:User {id: $userId})
+            MERGE (b:User {id: followedID})
+            MERGE (a)-[:FOLLOWS]->(b)
+        `, map[string]any{
+			"userId":   userID,
+			"followed": wasFollowing,
+		}); err != nil {
+			return nil, err
+		}
+
+		_, err := tx.Run(ctx, `
+            UNWIND $followers AS followerID
+            MERGE (a:User {id: followerID})
+            MERGE (b:User {id: $userId})
+            MERGE (a)-[:FOLLOWS]->(b)
+        `, map[string]any{
+			"userId":    userID,
+			"followers": wasFollowedBy,
+		})
+		return nil, err
+	})
+	return err
+}

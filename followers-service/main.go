@@ -5,6 +5,9 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"saga"
+
+	nats "saga/nats"
 
 	grpcserver "followers-service.xws.com/grpc"
 	"followers-service.xws.com/handler"
@@ -32,6 +35,20 @@ func initDatabaseDriver() neo4j.DriverWithContext {
 	return driver
 }
 
+func initNats() (saga.Publisher, saga.Subscriber) {
+	publisher, err := nats.NewNATSPublisher(os.Getenv("NATS_HOST"), os.Getenv("NATS_PORT"), os.Getenv("NATS_USER"), os.Getenv("NATS_PASSWORD"), "block_user.reply")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	subscriber, err := nats.NewNATSSubscriber(os.Getenv("NATS_HOST"), os.Getenv("NATS_PORT"), os.Getenv("NATS_USER"), os.Getenv("NATS_PASSWORD"), "block_user.command", "followers")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return publisher, subscriber
+}
+
 func startServer(followHandler *handler.FollowHandler) {
 	router := mux.NewRouter().StrictSlash(true)
 
@@ -57,8 +74,15 @@ func main() {
 	}
 
 	followRepo := &repo.FollowRepository{Driver: driver}
-	followService := &service.FollowService{Repo: followRepo}
+	snapshotRepo := &repo.SagaSnapshotRepository{Driver: driver}
+
+	followService := &service.FollowService{Repo: followRepo, SnapshotRepo: snapshotRepo}
+
 	followHandler := &handler.FollowHandler{Service: followService}
+
+	publisher, subscriber := initNats()
+	blockUserHandler, _ := handler.NewBlockUserCommandHandler(followService, publisher, subscriber)
+	_ = blockUserHandler
 
 	go grpcserver.StartGRPCServer(followRepo)
 
