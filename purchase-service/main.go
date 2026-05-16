@@ -84,6 +84,8 @@ func main() {
 	}
 	purchaseHandler := &handler.PurchaseHandler{Service: purchaseService}
 
+	go grpcclient.StartGRPCServer(purchaseRepo)
+
 	router := mux.NewRouter().StrictSlash(true)
 	router.Use(middleware.AuthMiddleware)
 

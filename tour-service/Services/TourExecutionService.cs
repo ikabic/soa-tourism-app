@@ -21,7 +21,7 @@ public class TourExecutionService(
         if (tour.Status == TourStatus.Draft)
             throw new InvalidOperationException("Cannot start a draft tour");
 
-        var purchased = await purchaseClient.HasPurchasedAsync(authHeader, tourId);
+        var purchased = await purchaseClient.HasPurchasedAsync(touristId, tourId);
         if (!purchased)
             throw new InvalidOperationException("Tour must be purchased before starting");
 
