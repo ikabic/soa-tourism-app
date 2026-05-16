@@ -8,6 +8,8 @@ using TourService.Grpc;
 using TourService.Middleware;
 using TourService.Repositories;
 using TourService.Services;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -61,6 +63,23 @@ builder.Services.AddScoped<IReviewService, ReviewService>();
 
 builder.Services.AddScoped<ITourExecutionRepository, TourExecutionRepository>();
 builder.Services.AddScoped<ITourExecutionService, TourExecutionService>();
+
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracing => tracing
+        .SetResourceBuilder(ResourceBuilder.CreateDefault()
+            .AddService("tour-service"))
+        .AddAspNetCoreInstrumentation(o =>
+        {
+            o.RecordException = true;
+        })
+        .AddHttpClientInstrumentation()
+        .AddGrpcClientInstrumentation()
+        .AddOtlpExporter(o =>
+        {
+            o.Endpoint = new Uri(
+                Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT")
+                ?? "http://jaeger:4317");
+        }));
 
 var app = builder.Build();
 
