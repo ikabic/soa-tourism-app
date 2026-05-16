@@ -15,11 +15,17 @@ services:
       DB_SSLMODE: disable
       JWT_SECRET: ${JWT_SECRET}
       FOLLOWERS_GRPC_ADDR: followers-app:50051
+      NATS_HOST: ${NATS_HOST:-host}
+      NATS_PORT: ${NATS_PORT:-4222}
+      NATS_USER: ${NATS_USER:-nats}
+      NATS_PASSWORD: ${NATS_PASSWORD:-nats}
     depends_on:
       followers-app:
         condition: service_started
       stakeholders-db:
         condition: service_healthy
+      nats:
+        condition: service_started
     volumes:
       - ./stakeholders-service/uploads:/app/stakeholders-service/uploads
 
@@ -122,9 +128,15 @@ services:
       DB_SSLMODE: disable
       JWT_SECRET: ${JWT_SECRET}
       TOUR_SERVICE_URL: http://tour-app:8080
+      NATS_HOST: ${NATS_HOST:-host}
+      NATS_PORT: ${NATS_PORT:-4222}
+      NATS_USER: ${NATS_USER:-nats}
+      NATS_PASSWORD: ${NATS_PASSWORD:-nats}
     depends_on:
       purchase-db:
         condition: service_healthy
+      nats:
+        condition: service_started
     ports:
       - "8086:8083"
 
@@ -162,6 +174,7 @@ services:
       - stakeholders-app
       - tour-app
       - followers-app
+      - purchase-app
 
   blog-db:
     container_name: blog-db
@@ -196,9 +209,15 @@ services:
       NEO4J_PASSWORD: ${NEO4J_PASSWORD:-password123}
       JWT_SECRET: ${JWT_SECRET}
       GRPC_PORT: 50051
+      NATS_HOST: ${NATS_HOST:-host}
+      NATS_PORT: ${NATS_PORT:-4222}
+      NATS_USER: ${NATS_USER:-nats}
+      NATS_PASSWORD: ${NATS_PASSWORD:-nats}
     depends_on:
       followers-db:
         condition: service_healthy
+      nats:
+        condition: service_started
 
   followers-db:
     container_name: followers-db
@@ -218,6 +237,14 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+
+  nats:
+    image: nats
+    container_name: nats
+    restart: on-failure
+    networks:
+      - servers
+    command: ["-m", "8222", "--user", "${NATS_USER:-nats}", "--pass", "${NATS_PASSWORD:-nats}"]
 
 volumes:
   stakeholders_pg_data:

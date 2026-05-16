@@ -3,6 +3,7 @@ FROM golang:alpine
 WORKDIR /app
 
 COPY proto ./proto
+COPY saga ./saga
 COPY followers-service/ ./followers-service/
 
 WORKDIR /app/followers-service
