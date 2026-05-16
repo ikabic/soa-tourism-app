@@ -4,6 +4,7 @@ using TourService.DTOs;
 using TourService.Models;
 using TourService.Models.Enums;
 using TourService.Repositories;
+using TourService.Saga;
 
 namespace TourService.Services;
 
@@ -11,11 +12,13 @@ public class TourService : ITourService
 {
     private readonly ITourRepository tourRepository;
     private readonly IPurchaseClient purchaseClient;
+    private readonly IArchiveTourOrchestrator _orchestrator;
 
-    public TourService(ITourRepository tourRepository, IPurchaseClient purchaseClient)
+    public TourService(ITourRepository tourRepository, IPurchaseClient purchaseClient, IArchiveTourOrchestrator orchestrator)
     {
         this.tourRepository = tourRepository;
         this.purchaseClient = purchaseClient;
+        _orchestrator = orchestrator;
     }
 
     public async Task<TourResponse> CreateTourAsync(string authorId, CreateTourRequest request)
@@ -209,10 +212,8 @@ public class TourService : ITourService
         if (tour.Status != TourStatus.Published)
             throw new InvalidOperationException("Only published tours can be archived");
 
-        tour.Status = TourStatus.Archived;
-        tour.ArchivedAt = DateTime.UtcNow;
+        _orchestrator.StartSaga(tourId);
 
-        await tourRepository.UpdateAsync(tour);
         return MapToResponse(tour);
     }
 

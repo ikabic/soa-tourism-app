@@ -1,10 +1,13 @@
-using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Connections;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using NATS.Client;
+using System.Text.Json.Serialization;
 using TourService.Clients;
 using TourService.Data;
 using TourService.Middleware;
 using TourService.Repositories;
+using TourService.Saga;
 using TourService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -41,6 +44,16 @@ builder.Services.AddSingleton<IStakeholdersClient, StakeholdersGrpcClient>();
 builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 
+var natsHost = Environment.GetEnvironmentVariable("NATS_HOST") ?? "nats";
+var natsPort = Environment.GetEnvironmentVariable("NATS_PORT") ?? "4222";
+var natsUser = Environment.GetEnvironmentVariable("NATS_USER") ?? "nats";
+var natsPassword = Environment.GetEnvironmentVariable("NATS_PASSWORD") ?? "nats";
+
+builder.Services.AddSingleton<INatsBus>(new NatsBus(natsHost, natsPort, natsUser, natsPassword));
+builder.Services.AddSingleton<IArchiveTourHandler, ArchiveTourHandler>();
+builder.Services.AddSingleton<ArchiveTourOrchestrator>();
+builder.Services.AddSingleton<IArchiveTourOrchestrator>(sp => sp.GetRequiredService<ArchiveTourOrchestrator>());
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
@@ -65,6 +78,8 @@ using (var scope = app.Services.CreateScope())
         );
     ");
 }
+
+app.Services.GetRequiredService<ArchiveTourOrchestrator>().Start();
 
 app.UseCors();
 app.UseMiddleware<JwtMiddleware>();
