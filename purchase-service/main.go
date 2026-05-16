@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"saga"
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
@@ -16,6 +17,8 @@ import (
 	"purchase-service/model"
 	"purchase-service/repo"
 	"purchase-service/service"
+
+	nats "saga/nats"
 )
 
 func initDatabase() *gorm.DB {
@@ -67,6 +70,20 @@ func initDatabase() *gorm.DB {
 	return database
 }
 
+func initNats(pubSubject, subSubject, queueGroup string) (saga.Publisher, saga.Subscriber) {
+	publisher, err := nats.NewNATSPublisher(os.Getenv("NATS_HOST"), os.Getenv("NATS_PORT"), os.Getenv("NATS_USER"), os.Getenv("NATS_PASSWORD"), pubSubject)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	subscriber, err := nats.NewNATSSubscriber(os.Getenv("NATS_HOST"), os.Getenv("NATS_PORT"), os.Getenv("NATS_USER"), os.Getenv("NATS_PASSWORD"), subSubject, queueGroup)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return publisher, subscriber
+}
+
 func main() {
 	database := initDatabase()
 	if database == nil {
@@ -81,6 +98,10 @@ func main() {
 		TourServiceURL: os.Getenv("TOUR_SERVICE_URL"),
 	}
 	purchaseHandler := &handler.PurchaseHandler{Service: purchaseService}
+
+	publisher, subscriber := initNats("block_user.reply", "block_user.command", "purchases")
+	blockUserHandler, _ := handler.NewBlockUserCommandHandler(purchaseService, publisher, subscriber)
+	_ = blockUserHandler
 
 	router := mux.NewRouter().StrictSlash(true)
 	router.Use(middleware.AuthMiddleware)

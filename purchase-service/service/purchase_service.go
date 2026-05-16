@@ -54,7 +54,7 @@ func (s *PurchaseService) AddToCart(userID uuid.UUID, request dto.AddCartItemReq
 		return nil, errors.New("tour already in cart")
 	}
 
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, err
 	}
 
@@ -116,6 +116,10 @@ func (s *PurchaseService) CreatePurchaseFromCartItem(userID uuid.UUID, item mode
 
 func (s *PurchaseService) RemoveCartItem(userID, itemID uuid.UUID) error {
 	return s.CartRepo.DeleteByID(userID, itemID)
+}
+
+func (s *PurchaseService) ClearCart(userID uuid.UUID) error {
+	return s.CartRepo.DeleteByUser(userID)
 }
 
 func (s *PurchaseService) Checkout(userID uuid.UUID, authHeader string) (*dto.CheckoutResponse, error) {
