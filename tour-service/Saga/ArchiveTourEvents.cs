@@ -24,5 +24,5 @@ public enum ArchiveTourReplyType : sbyte
     UnknownReply = 11
 }
 
-public record ArchiveTourCommand(TourDetails User, ArchiveTourCommandType Type);
-public record ArchiveTourReply(TourDetails User, ArchiveTourReplyType Type);
+public record ArchiveTourCommand(TourDetails Tour, ArchiveTourCommandType Type);
+public record ArchiveTourReply(TourDetails Tour, ArchiveTourReplyType Type);

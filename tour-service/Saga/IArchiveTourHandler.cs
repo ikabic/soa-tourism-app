@@ -3,4 +3,5 @@
 public interface IArchiveTourHandler
 {
     Task HandleAsync(ArchiveTourCommand command);
+    void StartListening();
 }

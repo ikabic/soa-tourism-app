@@ -20,7 +20,7 @@ public sealed class ArchiveTourOrchestrator : IArchiveTourOrchestrator, IDisposa
 
     public void Start()
     {
-        _commandSub = _bus.SubscribeCommands(_handler.HandleAsync);
+        _handler.StartListening();
         _replySub = _bus.SubscribeReplies(HandleReplyAsync);
     }
 
@@ -32,34 +32,34 @@ public sealed class ArchiveTourOrchestrator : IArchiveTourOrchestrator, IDisposa
 
     private Task HandleReplyAsync(ArchiveTourReply reply)
     {
-        _logger.LogInformation("Saga reply {Type} for tour {Id}", reply.Type, reply.User.ID);
+        _logger.LogInformation("Saga reply {Type} for tour {Id}", reply.Type, reply.Tour.ID);
 
         switch (reply.Type)
         {
             case ArchiveTourReplyType.TourArchived:
-                _bus.PublishCommand(new ArchiveTourCommand(reply.User, ArchiveTourCommandType.ClearTourFromCarts));
+                _bus.PublishCommand(new ArchiveTourCommand(reply.Tour, ArchiveTourCommandType.ClearTourFromCarts));
                 break;
 
             case ArchiveTourReplyType.TourNotArchived:
-                _logger.LogError("Could not archive tour {Id}, saga aborted", reply.User.ID);
+                _logger.LogError("Could not archive tour {Id}, saga aborted", reply.Tour.ID);
                 break;
 
             case ArchiveTourReplyType.TourFromCartsCleared:
-                _bus.PublishCommand(new ArchiveTourCommand(reply.User, ArchiveTourCommandType.ConfirmArchive));
+                _bus.PublishCommand(new ArchiveTourCommand(reply.Tour, ArchiveTourCommandType.ConfirmArchive));
                 break;
 
             case ArchiveTourReplyType.TourFromCartsNotCleared:
-                _logger.LogWarning("Cart cleanup failed for {Id}, rolling back", reply.User.ID);
-                _bus.PublishCommand(new ArchiveTourCommand(reply.User, ArchiveTourCommandType.RollbackTourArchiving));
+                _logger.LogWarning("Cart cleanup failed for {Id}, rolling back", reply.Tour.ID);
+                _bus.PublishCommand(new ArchiveTourCommand(reply.Tour, ArchiveTourCommandType.RollbackTourArchiving));
                 break;
 
             case ArchiveTourReplyType.ArchiveRolledBack:
-                _bus.PublishCommand(new ArchiveTourCommand(reply.User, ArchiveTourCommandType.CancelArchive));
+                _bus.PublishCommand(new ArchiveTourCommand(reply.Tour, ArchiveTourCommandType.CancelArchive));
                 break;
 
             case ArchiveTourReplyType.ArchiveNotRolledBack:
-                _logger.LogCritical("Tour {Id}: archived but carts not cleared and rollback failed. Reattempting rollback.", reply.User.ID);
-                _bus.PublishCommand(new ArchiveTourCommand(reply.User, ArchiveTourCommandType.RollbackTourArchiving));
+                _logger.LogCritical("Tour {Id}: archived but carts not cleared and rollback failed. Reattempting rollback.", reply.Tour.ID);
+                _bus.PublishCommand(new ArchiveTourCommand(reply.Tour, ArchiveTourCommandType.RollbackTourArchiving));
                 break;
         }
 

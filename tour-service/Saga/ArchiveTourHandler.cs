@@ -1,4 +1,5 @@
-﻿using TourService.Models.Enums;
+﻿using NATS.Client;
+using TourService.Models.Enums;
 using TourService.Repositories;
 
 namespace TourService.Saga;
@@ -8,6 +9,12 @@ public class ArchiveTourHandler : IArchiveTourHandler
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly INatsBus _bus;
     private readonly ILogger<ArchiveTourHandler> _logger;
+    private IAsyncSubscription? _sub;
+
+    public void StartListening()
+    {
+        _sub = _bus.SubscribeCommands(HandleAsync);
+    }
 
     public ArchiveTourHandler(IServiceScopeFactory scopeFactory, INatsBus bus, ILogger<ArchiveTourHandler> logger)
     {
@@ -21,19 +28,19 @@ public class ArchiveTourHandler : IArchiveTourHandler
         switch (command.Type)
         {
             case ArchiveTourCommandType.ArchiveTour:
-                await ArchiveAsync(command.User);
+                await ArchiveAsync(command.Tour);
                 break;
 
             case ArchiveTourCommandType.RollbackTourArchiving:
-                await RollbackAsync(command.User);
+                await RollbackAsync(command.Tour);
                 break;
 
             case ArchiveTourCommandType.ConfirmArchive:
-                _logger.LogInformation("Saga confirmed for tour {Id}", command.User.ID);
+                _logger.LogInformation("Saga confirmed for tour {Id}", command.Tour.ID);
                 break;
 
             case ArchiveTourCommandType.CancelArchive:
-                _logger.LogWarning("Saga cancelled for tour {Id}", command.User.ID);
+                _logger.LogWarning("Saga cancelled for tour {Id}", command.Tour.ID);
                 break;
         }
     }
