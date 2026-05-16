@@ -308,10 +308,12 @@ function StartTourButton({ tourId, token, navigate }) {
 
   return (
     <Btn
-      variant="ghost"
+      variant="primary"
+      size="vlg"
       icon="compass"
       onClick={() => startMut.mutate()}
       disabled={startMut.isPending}
+      style={{ position: 'absolute', bottom: 24, right: 24}}
     >
       {startMut.isPending ? 'Starting…' : 'Start tour'}
     </Btn>
@@ -368,7 +370,7 @@ export default function PublicTourDetailPage() {
       </button>
 
       {/* Header */}
-      <div className="card p-24 fade-up" style={{ marginBottom: 20 }}>
+      <div className="card p-24 fade-up" style={{ marginBottom: 20, position: 'relative' }}>
         <div className="row gap-12 wrap" style={{ marginBottom: 8 }}>
           <Difficulty value={tour.difficulty} />
         </div>
@@ -404,11 +406,9 @@ export default function PublicTourDetailPage() {
             </Btn>
             
           )}
-          {tour.isPurchased && (
-           <StartTourButton tourId={id} token={token} navigate={navigate} />
-          )}
           {statusMessage && <span className="faint" style={{ fontSize: 13 }}>{statusMessage}</span>}
         </div>
+        {tour.isPurchased && <StartTourButton tourId={id} token={token} navigate={navigate} />}
       </div>
 
       {/* Map + key point list */}
