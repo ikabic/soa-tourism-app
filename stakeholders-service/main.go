@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"path/filepath"
+	"saga"
 
 	"log"
 	"os"
@@ -11,6 +12,8 @@ import (
 
 	"net/http"
 
+	nats "saga/nats"
+
 	"github.com/gorilla/mux"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -18,6 +21,7 @@ import (
 	"stakeholders-service.xws.com/handler"
 	"stakeholders-service.xws.com/middleware"
 	"stakeholders-service.xws.com/model"
+	"stakeholders-service.xws.com/orchestrator"
 	"stakeholders-service.xws.com/repo"
 	"stakeholders-service.xws.com/service"
 )
@@ -46,12 +50,45 @@ func initDatabase() *gorm.DB {
 		return nil
 	}
 
-	database.AutoMigrate(&model.User{}, &model.Profile{})
+	database.AutoMigrate(&model.User{}, &model.Profile{}, &model.ProfileSnapshot{})
 	return database
 }
 
 func ensureUploadDirs() {
 	os.MkdirAll(filepath.Join("uploads", "avatars"), os.ModePerm)
+}
+
+func initOrchestrator() *orchestrator.BlockUserOrchestrator {
+	publisher, err := nats.NewNATSPublisher(os.Getenv("NATS_HOST"), os.Getenv("NATS_PORT"), os.Getenv("NATS_USER"), os.Getenv("NATS_PASSWORD"), "block_user.command")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	subscriber, err := nats.NewNATSSubscriber(os.Getenv("NATS_HOST"), os.Getenv("NATS_PORT"), os.Getenv("NATS_USER"), os.Getenv("NATS_PASSWORD"), "block_user.reply", "stakeholders")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	orchestrator, err := orchestrator.NewBlockUserOrchestrator(publisher, subscriber)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return orchestrator
+}
+
+func initNats() (saga.Publisher, saga.Subscriber) {
+	publisher, err := nats.NewNATSPublisher(os.Getenv("NATS_HOST"), os.Getenv("NATS_PORT"), os.Getenv("NATS_USER"), os.Getenv("NATS_PASSWORD"), "block_user.reply")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	subscriber, err := nats.NewNATSSubscriber(os.Getenv("NATS_HOST"), os.Getenv("NATS_PORT"), os.Getenv("NATS_USER"), os.Getenv("NATS_PASSWORD"), "block_user.command", "stakeholders")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return publisher, subscriber
 }
 
 func startServer(userHandler *handler.UserHandler, profileHandler *handler.ProfileHandler) {
@@ -89,12 +126,22 @@ func main() {
 
 	userRepo := &repo.UserRepository{DB: database}
 	profileRepo := &repo.ProfileRepository{DB: database}
+	snapshotRepo := &repo.SagaSnapshotRepository{DB: database}
 
-	userService := &service.UserService{Repo: userRepo}
-	profileService := &service.ProfileService{Repo: profileRepo, FollowClient: followClient}
+	orchestrator := initOrchestrator()
+
+	userService := &service.UserService{Repo: userRepo, Orchestrator: orchestrator}
+	profileService := &service.ProfileService{Repo: profileRepo, FollowClient: followClient, SnapshotRepo: snapshotRepo}
 
 	userHandler := &handler.UserHandler{Service: userService}
 	profileHandler := &handler.ProfileHandler{Service: profileService}
+
+	publisher, subscriber := initNats()
+	blockUserHandler, err := handler.NewBlockUserCommandHandler(userService, profileService, publisher, subscriber)
+	if err != nil {
+		log.Fatal(err)
+	}
+	_ = blockUserHandler
 
 	go grpcclient.StartGRPCServer(userRepo)
 

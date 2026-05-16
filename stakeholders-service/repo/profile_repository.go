@@ -42,3 +42,21 @@ func (repo *ProfileRepository) GetProfiles(userIDs []uuid.UUID) ([]ProfileDTO, e
 func (repo *ProfileRepository) Update(profile *model.Profile) error {
 	return repo.DB.Save(profile).Error
 }
+
+func (r *ProfileRepository) AnonymizeProfile(userID uuid.UUID) error {
+	return r.DB.Model(&model.Profile{}).
+		Where("user_id = ?", userID).
+		Updates(map[string]any{
+			"name":      "Blocked",
+			"last_name": "User",
+			"biography": "",
+			"motto":     "",
+			"avatar":    "",
+		}).Error
+}
+
+func (r *ProfileRepository) RestoreProfile(userID uuid.UUID, snapshot model.Profile) error {
+	return r.DB.Model(&model.Profile{}).
+		Where("user_id = ?", userID).
+		Updates(snapshot).Error
+}

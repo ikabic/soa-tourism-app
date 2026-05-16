@@ -38,6 +38,6 @@ func (r *UserRepository) GetAllUsers() ([]model.User, error) {
 	return users, err
 }
 
-func (r *UserRepository) BlockUser(userID string) error {
-	return r.DB.Model(&model.User{}).Where("id = ?", userID).Update("is_blocked", true).Error
+func (r *UserRepository) BlockUser(userID string, blocked bool) error {
+	return r.DB.Model(&model.User{}).Where("id = ?", userID).Update("is_blocked", blocked).Error
 }
