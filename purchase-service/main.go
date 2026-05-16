@@ -99,9 +99,13 @@ func main() {
 	}
 	purchaseHandler := &handler.PurchaseHandler{Service: purchaseService}
 
-	publisher, subscriber := initNats("block_user.reply", "block_user.command", "purchases")
-	blockUserHandler, _ := handler.NewBlockUserCommandHandler(purchaseService, publisher, subscriber)
+	blockUserPublisher, blockUserSubscriber := initNats("block_user.reply", "block_user.command", "purchases")
+	blockUserHandler, _ := handler.NewBlockUserCommandHandler(purchaseService, blockUserPublisher, blockUserSubscriber)
 	_ = blockUserHandler
+
+	archiveTourPublisher, archiveTourSubscriber := initNats("archive_tour.reply", "archive_tour.command", "purchases")
+	archiveTourHandler, _ := handler.NewArchiveTourCommandHandler(purchaseService, archiveTourPublisher, archiveTourSubscriber)
+	_ = archiveTourHandler
 
 	router := mux.NewRouter().StrictSlash(true)
 	router.Use(middleware.AuthMiddleware)

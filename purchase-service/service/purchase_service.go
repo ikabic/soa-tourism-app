@@ -118,6 +118,10 @@ func (s *PurchaseService) RemoveCartItem(userID, itemID uuid.UUID) error {
 	return s.CartRepo.DeleteByID(userID, itemID)
 }
 
+func (s *PurchaseService) RemoveCartItemForEveryone(tourID uuid.UUID) error {
+	return s.CartRepo.DeleteByTourID(tourID)
+}
+
 func (s *PurchaseService) ClearCart(userID uuid.UUID) error {
 	return s.CartRepo.DeleteByUser(userID)
 }
@@ -135,14 +139,6 @@ func (s *PurchaseService) Checkout(userID uuid.UUID, authHeader string) (*dto.Ch
 	total := 0.0
 
 	for _, item := range items {
-		published, err := s.verifyTourPublished(item.TourID, authHeader)
-		if err != nil {
-			return nil, err
-		}
-		if !published {
-			return nil, fmt.Errorf("tour %s is not available for purchase", item.TourName)
-		}
-
 		bought, err := s.PurchaseRepo.Exists(userID, item.TourID)
 		if err != nil {
 			return nil, err
@@ -163,6 +159,11 @@ func (s *PurchaseService) Checkout(userID uuid.UUID, authHeader string) (*dto.Ch
 			TourDescription: item.TourDescription,
 			Price:           item.Price,
 			Token:           token,
+		}
+
+		published, err := s.verifyTourPublished(item.TourID, authHeader)
+		if err != nil || !published {
+			return nil, fmt.Errorf("tour %s is no longer available for purchase", item.TourName)
 		}
 
 		if err := s.PurchaseRepo.Create(purchase); err != nil {
