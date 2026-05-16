@@ -125,6 +125,8 @@ func main() {
 	replyPublisher = initPublisher("archive_tour.reply")
 	initArchiveTourHandler(purchaseService, replyPublisher, commandSubscriber)
 
+	go grpcclient.StartGRPCServer(purchaseRepo)
+
 	router := mux.NewRouter().StrictSlash(true)
 	router.Use(middleware.AuthMiddleware)
 

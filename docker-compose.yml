@@ -1,3 +1,10 @@
+x-logging: &fluent-bit
+  driver: fluentd
+  options:
+    fluentd-address: ${FLUENT_BIT_ADDRESS:-127.0.0.1}:24224
+    fluentd-async: "true"
+    fluentd-max-retries: "3"
+
 services:
   stakeholders-app:
     build:
@@ -28,6 +35,7 @@ services:
         condition: service_started
     volumes:
       - ./stakeholders-service/uploads:/app/stakeholders-service/uploads
+    logging: *fluent-bit
 
   stakeholders-db:
     container_name: stakeholders-db
@@ -48,6 +56,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    logging: *fluent-bit
 
   blog-app:
     build:
@@ -72,6 +81,8 @@ services:
         condition: service_started
     volumes:
       - ./blog-service/uploads:/app/uploads
+    logging: *fluent-bit
+
   tour-app:
     build:
       context: .
@@ -86,7 +97,8 @@ services:
       DB_PASSWORD: ${TOUR_DB_PASSWORD:-postgres}
       DB_NAME: ${TOUR_DB_NAME:-tourdb}
       JWT_SECRET: ${JWT_SECRET}
-      PURCHASE_SERVICE_URL: http://purchase-app:8083
+      PURCHASE_GRPC_ADDR: http://purchase-app:50051
+      STAKEHOLDERS_GRPC_ADDR: http://stakeholders-app:50051
       TOUR_SERVICE_GRPC_ADDR: tour-app:50051
       ASPNETCORE_URLS: http://+:8080
       NATS_HOST: ${NATS_HOST:-nats}
@@ -101,6 +113,7 @@ services:
         condition: service_started
       nats:
         condition: service_started
+    logging: *fluent-bit
 
   tour-db:
     container_name: tour-db
@@ -121,6 +134,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    logging: *fluent-bit
 
   purchase-app:
     build:
@@ -150,6 +164,7 @@ services:
         condition: service_started
     ports:
       - "8086:8083"
+    logging: *fluent-bit
 
   purchase-db:
     container_name: purchase-db
@@ -170,6 +185,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    logging: *fluent-bit
 
   api-gateway:
     image: nginx:stable-alpine
@@ -186,6 +202,7 @@ services:
       - tour-app
       - followers-app
       - purchase-app
+      - fluent-bit
 
   blog-db:
     container_name: blog-db
@@ -206,6 +223,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    logging: *fluent-bit
     
   followers-app:
     build:
@@ -229,6 +247,7 @@ services:
         condition: service_healthy
       nats:
         condition: service_started
+    logging: *fluent-bit
 
   followers-db:
     container_name: followers-db
@@ -248,6 +267,60 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+    logging: *fluent-bit
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    networks:
+      - servers
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    networks:
+      - servers
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.47.0
+    container_name: cadvisor
+    networks:
+      - servers
+    ports:
+      - "8081:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    networks:
+      - servers
+    ports:
+      - "9100:9100"
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/host/root'
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/host/root:ro
 
   nats:
     image: nats
@@ -268,12 +341,30 @@ services:
     environment:
       COLLECTOR_OTLP_ENABLED: "true"
 
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    networks:
+      - servers
+
+  fluent-bit:
+    image: grafana/fluent-bit-plugin-loki:latest
+    container_name: fluent-bit
+    volumes:
+      - ./monitoring/fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf
+    ports:
+      - "24224:24224"
+      - "24224:24224/udp"
+    networks:
+      - servers
+
 volumes:
   stakeholders_pg_data:
   blog_pg_data:
   tour_pg_data:
   purchase_pg_data:
   followers_neo4j_data:
+  grafana_data:
 
 networks:
   servers:

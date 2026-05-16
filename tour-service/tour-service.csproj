@@ -35,6 +35,7 @@
 <ItemGroup>
   <Protobuf Include="Grpc\user.proto" GrpcServices="Client" />
   <Protobuf Include="..\proto\tour\tour_service.proto" GrpcServices="Server" />
+  <Protobuf Include="..\proto\purchase\purchase_service.proto" GrpcServices="Client" />
 </ItemGroup>
 
   <ItemGroup>

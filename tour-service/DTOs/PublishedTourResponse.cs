@@ -5,6 +5,8 @@ namespace TourService.DTOs;
 public class PublishedTourResponse
 {
     public Guid Id { get; set; }
+    public string AuthorId { get; set; } = null!;
+    public string? AuthorUsername { get; set; }
     public string Name { get; set; } = null!;
     public string Description { get; set; } = null!;
     public Difficulty Difficulty { get; set; }

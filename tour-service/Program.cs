@@ -45,9 +45,7 @@ builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
 builder.Services.AddControllers()
     .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
-var purchaseServiceUrl = Environment.GetEnvironmentVariable("PURCHASE_SERVICE_URL") ?? "http://purchase-app:8083";
-builder.Services.AddHttpClient<IPurchaseClient, PurchaseClient>(c =>
-    c.BaseAddress = new Uri(purchaseServiceUrl));
+builder.Services.AddSingleton<IPurchaseClient, PurchaseGrpcClient>();
 
 builder.Services.AddScoped<ITourRepository, TourRepository>();
 builder.Services.AddScoped<ITourService, TourService.Services.TourService>();
