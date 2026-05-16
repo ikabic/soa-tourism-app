@@ -1,12 +1,14 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /app
-COPY *.csproj .
+COPY saga/ /saga/
+COPY tour-service/*.csproj .
 RUN dotnet restore
-COPY . .
+COPY tour-service/ .
 RUN dotnet publish -c Release -o /out
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
 COPY --from=build /out .
+COPY --from=build /saga /saga
 EXPOSE 8080
 ENTRYPOINT ["dotnet", "tour-service.dll"]

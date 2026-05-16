@@ -72,8 +72,8 @@ services:
         condition: service_started
   tour-app:
     build:
-      context: ./tour-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: tour-service/Dockerfile
     container_name: tour-app
     networks:
       - servers
@@ -86,10 +86,16 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       PURCHASE_SERVICE_URL: http://purchase-app:8083
       ASPNETCORE_URLS: http://+:8080
+      NATS_HOST: ${NATS_HOST:-nats}
+      NATS_PORT: ${NATS_PORT:-4222}
+      NATS_USER: ${NATS_USER:-nats}
+      NATS_PASSWORD: ${NATS_PASSWORD:-nats}
     depends_on:
       tour-db:
         condition: service_healthy
       purchase-app:
+        condition: service_started
+      nats:
         condition: service_started
 
   tour-db:
