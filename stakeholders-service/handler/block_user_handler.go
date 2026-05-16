@@ -66,7 +66,7 @@ func (handler *BlockUserCommandHandler) handle(cmd *block_user.BlockUserCommand)
 	case block_user.ConfirmBlock:
 		log.Printf("User block saga confirmed for user %s", cmd.User.ID.String())
 		handler.profileService.DropSnapshot(cmd.User.ID)
-		reply.Type = block_user.BlockConfirmed
+		return
 
 	default:
 		return

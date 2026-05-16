@@ -51,6 +51,7 @@ func (handler *BlockUserCommandHandler) handle(cmd *block_user.BlockUserCommand)
 
 	case block_user.ConfirmBlock:
 		handler.followService.DropSnapshot(cmd.User.ID.String())
+		return
 
 	default:
 		return

@@ -70,18 +70,34 @@ func initDatabase() *gorm.DB {
 	return database
 }
 
-func initNats(pubSubject, subSubject, queueGroup string) (saga.Publisher, saga.Subscriber) {
-	publisher, err := nats.NewNATSPublisher(os.Getenv("NATS_HOST"), os.Getenv("NATS_PORT"), os.Getenv("NATS_USER"), os.Getenv("NATS_PASSWORD"), pubSubject)
+func initPublisher(subject string) saga.Publisher {
+	publisher, err := nats.NewNATSPublisher(os.Getenv("NATS_HOST"), os.Getenv("NATS_PORT"), os.Getenv("NATS_USER"), os.Getenv("NATS_PASSWORD"), subject)
 	if err != nil {
 		log.Fatal(err)
 	}
+	return publisher
+}
 
-	subscriber, err := nats.NewNATSSubscriber(os.Getenv("NATS_HOST"), os.Getenv("NATS_PORT"), os.Getenv("NATS_USER"), os.Getenv("NATS_PASSWORD"), subSubject, queueGroup)
+func initSubscriber(subject, queueGroup string) saga.Subscriber {
+	subscriber, err := nats.NewNATSSubscriber(os.Getenv("NATS_HOST"), os.Getenv("NATS_PORT"), os.Getenv("NATS_USER"), os.Getenv("NATS_PASSWORD"), subject, queueGroup)
 	if err != nil {
 		log.Fatal(err)
 	}
+	return subscriber
+}
 
-	return publisher, subscriber
+func initBlockUserHandler(purchaseService *service.PurchaseService, publisher saga.Publisher, subscriber saga.Subscriber) {
+	_, err := handler.NewBlockUserCommandHandler(purchaseService, publisher, subscriber)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func initArchiveTourHandler(purchaseService *service.PurchaseService, publisher saga.Publisher, subscriber saga.Subscriber) {
+	_, err := handler.NewArchiveTourCommandHandler(purchaseService, publisher, subscriber)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {
@@ -99,13 +115,13 @@ func main() {
 	}
 	purchaseHandler := &handler.PurchaseHandler{Service: purchaseService}
 
-	blockUserPublisher, blockUserSubscriber := initNats("block_user.reply", "block_user.command", "purchases")
-	blockUserHandler, _ := handler.NewBlockUserCommandHandler(purchaseService, blockUserPublisher, blockUserSubscriber)
-	_ = blockUserHandler
+	commandSubscriber := initSubscriber("block_user.command", "purchases")
+	replyPublisher := initPublisher("block_user.reply")
+	initBlockUserHandler(purchaseService, replyPublisher, commandSubscriber)
 
-	archiveTourPublisher, archiveTourSubscriber := initNats("archive_tour.reply", "archive_tour.command", "purchases")
-	archiveTourHandler, _ := handler.NewArchiveTourCommandHandler(purchaseService, archiveTourPublisher, archiveTourSubscriber)
-	_ = archiveTourHandler
+	commandSubscriber = initSubscriber("archive_tour.command", "purchases")
+	replyPublisher = initPublisher("archive_tour.reply")
+	initArchiveTourHandler(purchaseService, replyPublisher, commandSubscriber)
 
 	router := mux.NewRouter().StrictSlash(true)
 	router.Use(middleware.AuthMiddleware)

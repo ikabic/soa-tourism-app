@@ -58,37 +58,35 @@ func ensureUploadDirs() {
 	os.MkdirAll(filepath.Join("uploads", "avatars"), os.ModePerm)
 }
 
-func initOrchestrator() *orchestrator.BlockUserOrchestrator {
-	publisher, err := nats.NewNATSPublisher(os.Getenv("NATS_HOST"), os.Getenv("NATS_PORT"), os.Getenv("NATS_USER"), os.Getenv("NATS_PASSWORD"), "block_user.command")
+func initPublisher(subject string) saga.Publisher {
+	publisher, err := nats.NewNATSPublisher(os.Getenv("NATS_HOST"), os.Getenv("NATS_PORT"), os.Getenv("NATS_USER"), os.Getenv("NATS_PASSWORD"), subject)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	subscriber, err := nats.NewNATSSubscriber(os.Getenv("NATS_HOST"), os.Getenv("NATS_PORT"), os.Getenv("NATS_USER"), os.Getenv("NATS_PASSWORD"), "block_user.reply", "stakeholders")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	orchestrator, err := orchestrator.NewBlockUserOrchestrator(publisher, subscriber)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return orchestrator
+	return publisher
 }
 
-func initNats() (saga.Publisher, saga.Subscriber) {
-	publisher, err := nats.NewNATSPublisher(os.Getenv("NATS_HOST"), os.Getenv("NATS_PORT"), os.Getenv("NATS_USER"), os.Getenv("NATS_PASSWORD"), "block_user.reply")
+func initSubscriber(subject, queueGroup string) saga.Subscriber {
+	subscriber, err := nats.NewNATSSubscriber(os.Getenv("NATS_HOST"), os.Getenv("NATS_PORT"), os.Getenv("NATS_USER"), os.Getenv("NATS_PASSWORD"), subject, queueGroup)
 	if err != nil {
 		log.Fatal(err)
 	}
+	return subscriber
+}
 
-	subscriber, err := nats.NewNATSSubscriber(os.Getenv("NATS_HOST"), os.Getenv("NATS_PORT"), os.Getenv("NATS_USER"), os.Getenv("NATS_PASSWORD"), "block_user.command", "stakeholders")
+func initOrchestrator(publisher saga.Publisher, subscriber saga.Subscriber) *orchestrator.BlockUserOrchestrator {
+	o, err := orchestrator.NewBlockUserOrchestrator(publisher, subscriber)
 	if err != nil {
 		log.Fatal(err)
 	}
+	return o
+}
 
-	return publisher, subscriber
+func initBlockUserHandler(userService *service.UserService, profileService *service.ProfileService, publisher saga.Publisher, subscriber saga.Subscriber) {
+	_, err := handler.NewBlockUserCommandHandler(userService, profileService, publisher, subscriber)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func startServer(userHandler *handler.UserHandler, profileHandler *handler.ProfileHandler) {
@@ -128,7 +126,9 @@ func main() {
 	profileRepo := &repo.ProfileRepository{DB: database}
 	snapshotRepo := &repo.SagaSnapshotRepository{DB: database}
 
-	orchestrator := initOrchestrator()
+	commandPublisher := initPublisher("block_user.command")
+	replySubscriber := initSubscriber("block_user.reply", "stakeholders")
+	orchestrator := initOrchestrator(commandPublisher, replySubscriber)
 
 	userService := &service.UserService{Repo: userRepo, Orchestrator: orchestrator}
 	profileService := &service.ProfileService{Repo: profileRepo, FollowClient: followClient, SnapshotRepo: snapshotRepo}
@@ -136,12 +136,9 @@ func main() {
 	userHandler := &handler.UserHandler{Service: userService}
 	profileHandler := &handler.ProfileHandler{Service: profileService}
 
-	publisher, subscriber := initNats()
-	blockUserHandler, err := handler.NewBlockUserCommandHandler(userService, profileService, publisher, subscriber)
-	if err != nil {
-		log.Fatal(err)
-	}
-	_ = blockUserHandler
+	commandSubscriber := initSubscriber("block_user.command", "stakeholders")
+	replyPublisher := initPublisher("block_user.reply")
+	initBlockUserHandler(userService, profileService, replyPublisher, commandSubscriber)
 
 	go grpcclient.StartGRPCServer(userRepo)
 

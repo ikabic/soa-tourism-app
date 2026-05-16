@@ -35,18 +35,27 @@ func initDatabaseDriver() neo4j.DriverWithContext {
 	return driver
 }
 
-func initNats() (saga.Publisher, saga.Subscriber) {
-	publisher, err := nats.NewNATSPublisher(os.Getenv("NATS_HOST"), os.Getenv("NATS_PORT"), os.Getenv("NATS_USER"), os.Getenv("NATS_PASSWORD"), "block_user.reply")
+func initPublisher(subject string) saga.Publisher {
+	publisher, err := nats.NewNATSPublisher(os.Getenv("NATS_HOST"), os.Getenv("NATS_PORT"), os.Getenv("NATS_USER"), os.Getenv("NATS_PASSWORD"), subject)
 	if err != nil {
 		log.Fatal(err)
 	}
+	return publisher
+}
 
-	subscriber, err := nats.NewNATSSubscriber(os.Getenv("NATS_HOST"), os.Getenv("NATS_PORT"), os.Getenv("NATS_USER"), os.Getenv("NATS_PASSWORD"), "block_user.command", "followers")
+func initSubscriber(subject, queueGroup string) saga.Subscriber {
+	subscriber, err := nats.NewNATSSubscriber(os.Getenv("NATS_HOST"), os.Getenv("NATS_PORT"), os.Getenv("NATS_USER"), os.Getenv("NATS_PASSWORD"), subject, queueGroup)
 	if err != nil {
 		log.Fatal(err)
 	}
+	return subscriber
+}
 
-	return publisher, subscriber
+func initBlockUserHandler(followService *service.FollowService, publisher saga.Publisher, subscriber saga.Subscriber) {
+	_, err := handler.NewBlockUserCommandHandler(followService, publisher, subscriber)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func startServer(followHandler *handler.FollowHandler) {
@@ -80,9 +89,9 @@ func main() {
 
 	followHandler := &handler.FollowHandler{Service: followService}
 
-	publisher, subscriber := initNats()
-	blockUserHandler, _ := handler.NewBlockUserCommandHandler(followService, publisher, subscriber)
-	_ = blockUserHandler
+	commandSubscriber := initSubscriber("block_user.command", "followers")
+	replyPublisher := initPublisher("block_user.reply")
+	initBlockUserHandler(followService, replyPublisher, commandSubscriber)
 
 	go grpcserver.StartGRPCServer(followRepo)
 
