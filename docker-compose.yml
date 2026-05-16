@@ -80,7 +80,8 @@ services:
       DB_PASSWORD: ${TOUR_DB_PASSWORD:-postgres}
       DB_NAME: ${TOUR_DB_NAME:-tourdb}
       JWT_SECRET: ${JWT_SECRET}
-      PURCHASE_SERVICE_URL: http://purchase-app:8083
+      PURCHASE_GRPC_ADDR: http://purchase-app:50051
+      STAKEHOLDERS_GRPC_ADDR: http://stakeholders-app:50051
       TOUR_SERVICE_GRPC_ADDR: tour-app:50051
       ASPNETCORE_URLS: http://+:8080
       OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317

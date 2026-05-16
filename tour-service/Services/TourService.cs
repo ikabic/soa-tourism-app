@@ -11,11 +11,13 @@ public class TourService : ITourService
 {
     private readonly ITourRepository tourRepository;
     private readonly IPurchaseClient purchaseClient;
+    private readonly IStakeholdersClient stakeholdersClient;
 
-    public TourService(ITourRepository tourRepository, IPurchaseClient purchaseClient)
+    public TourService(ITourRepository tourRepository, IPurchaseClient purchaseClient, IStakeholdersClient stakeholdersClient)
     {
         this.tourRepository = tourRepository;
         this.purchaseClient = purchaseClient;
+        this.stakeholdersClient = stakeholdersClient;
     }
 
     public async Task<TourResponse> CreateTourAsync(string authorId, CreateTourRequest request)
@@ -70,7 +72,7 @@ public class TourService : ITourService
             return response;
         }
 
-        var purchased = await purchaseClient.HasPurchasedAsync(authorizationHeader, tourId);
+        var purchased = await purchaseClient.HasPurchasedAsync(userId, tourId);
         if (purchased)
         {
             response.KeyPoints = tour.KeyPoints.OrderBy(k => k.Order).Select(MapToKeyPointResponse).ToList();
@@ -237,12 +239,23 @@ public class TourService : ITourService
     public async Task<List<PublishedTourResponse>> GetPublishedToursAsync()
     {
         var tours = await tourRepository.GetPublishedToursAsync();
+
+        var authorIds = tours.Select(t => t.AuthorId).Distinct().ToList();
+        var authorMap = new Dictionary<string, string?>();
+        foreach (var id in authorIds)
+        {
+            var user = await stakeholdersClient.GetUserAsync(id);
+            authorMap[id] = user?.Username;
+        }
+
         return tours.Select(t =>
         {
             var firstKeyPoint = t.KeyPoints.MinBy(k => k.Order);
             return new PublishedTourResponse
             {
                 Id = t.Id,
+                AuthorId = t.AuthorId,
+                AuthorUsername = authorMap.GetValueOrDefault(t.AuthorId),
                 Name = t.Name,
                 Description = t.Description,
                 Difficulty = t.Difficulty,
