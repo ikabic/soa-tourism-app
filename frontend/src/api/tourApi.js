@@ -92,4 +92,22 @@ export const api = {
 
   createReview: (tourId, data, token) =>
     req('POST', `/tours/tours/${tourId}/reviews`, data, token),
+
+  startExecution: (tourId, data, token) =>
+    req('POST', `/tours/tours/${tourId}/executions/start`, data, token),
+
+  getActiveExecution: (tourId, token) =>
+    req('GET', `/tours/tours/${tourId}/executions/active`, undefined, token),
+
+  checkPosition: (tourId, executionId, data, token) =>
+    req('POST', `/tours/tours/${tourId}/executions/${executionId}/check-position`, data, token),
+
+  completeExecution: (tourId, executionId, token) =>
+    req('POST', `/tours/tours/${tourId}/executions/${executionId}/complete`, null, token),
+
+  abandonExecution: (tourId, executionId, token) =>
+    req('POST', `/tours/tours/${tourId}/executions/${executionId}/abandon`, null, token),
+
+  getExecutionById: (tourId, executionId, token) =>
+    req('GET', `/tours/tours/${tourId}/executions/${executionId}`, undefined, token),
 };

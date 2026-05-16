@@ -59,6 +59,9 @@ builder.Services.AddSingleton<IStakeholdersClient, StakeholdersGrpcClient>();
 builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 
+builder.Services.AddScoped<ITourExecutionRepository, TourExecutionRepository>();
+builder.Services.AddScoped<ITourExecutionService, TourExecutionService>();
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
@@ -81,6 +84,34 @@ using (var scope = app.Services.CreateScope())
             CONSTRAINT ""PK_Reviews"" PRIMARY KEY (""Id""),
             CONSTRAINT ""FK_Reviews_Tours_TourId"" FOREIGN KEY (""TourId"") REFERENCES ""Tours"" (""Id"") ON DELETE CASCADE
         );
+    ");
+
+    db.Database.ExecuteSqlRaw(@"
+      CREATE TABLE IF NOT EXISTS ""TourExecutions"" (
+          ""Id"" uuid NOT NULL,
+          ""TourId"" uuid NOT NULL,
+          ""TouristId"" text NOT NULL,
+          ""Status"" text NOT NULL,
+          ""StartedAt"" timestamp with time zone NOT NULL,
+          ""CompletedAt"" timestamp with time zone,
+          ""AbandonedAt"" timestamp with time zone,
+          ""LastActivity"" timestamp with time zone NOT NULL,
+          ""StartLatitude"" double precision NOT NULL,
+          ""StartLongitude"" double precision NOT NULL,
+          CONSTRAINT ""PK_TourExecutions"" PRIMARY KEY (""Id""),
+          CONSTRAINT ""FK_TourExecutions_Tours_TourId"" FOREIGN KEY (""TourId"") REFERENCES ""Tours"" (""Id"") ON DELETE CASCADE
+      );
+   ");
+
+    db.Database.ExecuteSqlRaw(@"
+       CREATE TABLE IF NOT EXISTS ""CompletedKeyPoints"" (
+           ""Id"" uuid NOT NULL,
+           ""TourExecutionId"" uuid NOT NULL,
+           ""KeyPointId"" uuid NOT NULL,
+           ""CompletedAt"" timestamp with time zone NOT NULL,
+           CONSTRAINT ""PK_CompletedKeyPoints"" PRIMARY KEY (""Id""),
+           CONSTRAINT ""FK_CompletedKeyPoints_TourExecutions_TourExecutionId"" FOREIGN KEY (""TourExecutionId"") REFERENCES ""TourExecutions"" (""Id"") ON DELETE CASCADE
+       );
     ");
 }
 

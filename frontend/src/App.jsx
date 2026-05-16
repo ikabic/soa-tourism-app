@@ -15,6 +15,7 @@ import PurchasedToursPage from './pages/PurchasedToursPage';
 import SimulatorPage from './pages/SimulatorPage';
 import RegisterPage from './pages/RegisterPage';
 import AdminUsersPage from './pages/AdminUsersPage';
+import ActiveTourPage from './pages/ActiveTourPage';
 
 function RequireAuth({ children }) {
   const { user } = useAuth();
@@ -136,6 +137,10 @@ export default function App() {
       <Route path="/" element={<RequireAuth><Layout /></RequireAuth>}>
         <Route path=":username" element={<ProfilePage />} />
       </Route>
+
+      <Route path="tours/:tourId/run/:executionId" element={
+        user?.role === 'tourist' ? <ActiveTourPage /> : <Navigate to="/browse" replace />
+       } />
 
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
