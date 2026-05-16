@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log"
 	saga "saga"
 	"saga/block_user"
 
@@ -63,6 +64,7 @@ func (handler *BlockUserCommandHandler) handle(cmd *block_user.BlockUserCommand)
 		reply.Type = block_user.BlockRolledBack
 
 	case block_user.ConfirmBlock:
+		log.Printf("User block saga confirmed for user %s", cmd.User.ID.String())
 		handler.profileService.DropSnapshot(cmd.User.ID)
 		reply.Type = block_user.BlockConfirmed
 
