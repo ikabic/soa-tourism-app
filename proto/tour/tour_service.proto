@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+option go_package = "proto/tour";
+option csharp_namespace = "TourService.Grpc";
+
+package tour;
+
+service TourService {
+  rpc GetTourPublicInfo (GetTourPublicInfoRequest) returns (GetTourPublicInfoResponse);
+  rpc IsTourPublished (IsTourPublishedRequest) returns (IsTourPublishedResponse);
+}
+
+message GetTourPublicInfoRequest {
+  string tour_id = 1;
+}
+
+message GetTourPublicInfoResponse {
+  string tour_id = 1;
+  string name = 2;
+  string description = 3;
+  double price = 4;
+}
+
+message IsTourPublishedRequest {
+  string tour_id = 1;
+}
+
+message IsTourPublishedResponse {
+  bool is_published = 1;
+}

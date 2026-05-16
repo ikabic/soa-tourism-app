@@ -1,16 +1,32 @@
-using Microsoft.AspNetCore.Connections;
+using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using NATS.Client;
-using System.Text.Json.Serialization;
 using TourService.Clients;
 using TourService.Data;
+using TourService.Grpc;
 using TourService.Middleware;
 using TourService.Repositories;
 using TourService.Saga;
 using TourService.Services;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ListenAnyIP(8080, listenOptions =>
+    {
+        listenOptions.Protocols = HttpProtocols.Http1;
+    });
+
+    options.ListenAnyIP(50051, listenOptions =>
+    {
+        listenOptions.UseHttps("tourapp.pfx", "password");
+        listenOptions.Protocols = HttpProtocols.Http2;
+    });
+});
 
 var dbHost = Environment.GetEnvironmentVariable("DB_HOST") ?? "localhost";
 var dbPort = Environment.GetEnvironmentVariable("DB_PORT") ?? "5432";
@@ -36,6 +52,8 @@ builder.Services.AddHttpClient<IPurchaseClient, PurchaseClient>(c =>
 builder.Services.AddScoped<ITourRepository, TourRepository>();
 builder.Services.AddScoped<ITourService, TourService.Services.TourService>();
 
+builder.Services.AddGrpc();
+
 builder.Services.AddGrpcClient<TourService.Grpc.UserService.UserServiceClient>(o =>
 {
     o.Address = new Uri(Environment.GetEnvironmentVariable("STAKEHOLDERS_GRPC_ADDR") ?? "http://stakeholders-app:50051");
@@ -43,6 +61,25 @@ builder.Services.AddGrpcClient<TourService.Grpc.UserService.UserServiceClient>(o
 builder.Services.AddSingleton<IStakeholdersClient, StakeholdersGrpcClient>();
 builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
+builder.Services.AddScoped<ITourExecutionRepository, TourExecutionRepository>();
+builder.Services.AddScoped<ITourExecutionService, TourExecutionService>();
+
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracing => tracing
+        .SetResourceBuilder(ResourceBuilder.CreateDefault()
+            .AddService("tour-service"))
+        .AddAspNetCoreInstrumentation(o =>
+        {
+            o.RecordException = true;
+        })
+        .AddHttpClientInstrumentation()
+        .AddGrpcClientInstrumentation()
+        .AddOtlpExporter(o =>
+        {
+            o.Endpoint = new Uri(
+                Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT")
+                ?? "http://jaeger:4317");
+        }));
 
 var natsHost = Environment.GetEnvironmentVariable("NATS_HOST") ?? "nats";
 var natsPort = Environment.GetEnvironmentVariable("NATS_PORT") ?? "4222";
@@ -77,12 +114,41 @@ using (var scope = app.Services.CreateScope())
             CONSTRAINT ""FK_Reviews_Tours_TourId"" FOREIGN KEY (""TourId"") REFERENCES ""Tours"" (""Id"") ON DELETE CASCADE
         );
     ");
+
+    db.Database.ExecuteSqlRaw(@"
+      CREATE TABLE IF NOT EXISTS ""TourExecutions"" (
+          ""Id"" uuid NOT NULL,
+          ""TourId"" uuid NOT NULL,
+          ""TouristId"" text NOT NULL,
+          ""Status"" text NOT NULL,
+          ""StartedAt"" timestamp with time zone NOT NULL,
+          ""CompletedAt"" timestamp with time zone,
+          ""AbandonedAt"" timestamp with time zone,
+          ""LastActivity"" timestamp with time zone NOT NULL,
+          ""StartLatitude"" double precision NOT NULL,
+          ""StartLongitude"" double precision NOT NULL,
+          CONSTRAINT ""PK_TourExecutions"" PRIMARY KEY (""Id""),
+          CONSTRAINT ""FK_TourExecutions_Tours_TourId"" FOREIGN KEY (""TourId"") REFERENCES ""Tours"" (""Id"") ON DELETE CASCADE
+      );
+   ");
+
+    db.Database.ExecuteSqlRaw(@"
+       CREATE TABLE IF NOT EXISTS ""CompletedKeyPoints"" (
+           ""Id"" uuid NOT NULL,
+           ""TourExecutionId"" uuid NOT NULL,
+           ""KeyPointId"" uuid NOT NULL,
+           ""CompletedAt"" timestamp with time zone NOT NULL,
+           CONSTRAINT ""PK_CompletedKeyPoints"" PRIMARY KEY (""Id""),
+           CONSTRAINT ""FK_CompletedKeyPoints_TourExecutions_TourExecutionId"" FOREIGN KEY (""TourExecutionId"") REFERENCES ""TourExecutions"" (""Id"") ON DELETE CASCADE
+       );
+    ");
 }
 
 app.Services.GetRequiredService<ArchiveTourOrchestrator>().Start();
 
 app.UseCors();
 app.UseMiddleware<JwtMiddleware>();
+app.MapGrpcService<TourServiceGrpc>();
 app.MapControllers();
 
 app.Run();

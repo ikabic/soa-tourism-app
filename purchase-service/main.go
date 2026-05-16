@@ -12,13 +12,14 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"purchase-service/handler"
-	"purchase-service/middleware"
-	"purchase-service/model"
-	"purchase-service/repo"
-	"purchase-service/service"
-
 	nats "saga/nats"
+
+	grpcclient "example.com/purchase-service/grpc"
+	"example.com/purchase-service/handler"
+	"example.com/purchase-service/middleware"
+	"example.com/purchase-service/model"
+	"example.com/purchase-service/repo"
+	"example.com/purchase-service/service"
 )
 
 func initDatabase() *gorm.DB {
@@ -108,10 +109,11 @@ func main() {
 
 	cartRepo := &repo.CartRepository{DB: database}
 	purchaseRepo := &repo.PurchaseRepository{DB: database}
+	tourClient := grpcclient.NewTourClient(os.Getenv("TOUR_SERVICE_GRPC_ADDR"))
 	purchaseService := &service.PurchaseService{
-		CartRepo:       cartRepo,
-		PurchaseRepo:   purchaseRepo,
-		TourServiceURL: os.Getenv("TOUR_SERVICE_URL"),
+		CartRepo:     cartRepo,
+		PurchaseRepo: purchaseRepo,
+		TourClient:   tourClient,
 	}
 	purchaseHandler := &handler.PurchaseHandler{Service: purchaseService}
 

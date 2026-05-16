@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { MapContainer, TileLayer, Marker, Popup, Tooltip, useMap } from 'react-leaflet';
 import { api } from '../api/tourApi';
+import { api as stakeholdersApi } from '../api/stakeholdersApi';
 import { useAuth } from '../context/AuthContext';
 import { Btn, Difficulty, Tag, TransportPill, ErrBanner, Icon, ICONS, ProfileUsername } from '../components';
 import { formatDate } from '../utils/helpers';
@@ -288,6 +289,35 @@ function ReviewSection({ tourId, token, isPurchased }) {
   );
 }
 
+function StartTourButton({ tourId, token, navigate }) {
+  const startMut = useMutation({
+    mutationFn: () =>
+      api.startExecution(
+        tourId,
+        {
+          latitude: 0,
+          longitude: 0,
+        },
+        token
+      ),
+
+    onSuccess: (execution) => {
+      navigate(`/tours/${tourId}/run/${execution.id}`);
+    },
+  });
+
+  return (
+    <Btn
+      variant="ghost"
+      icon="compass"
+      onClick={() => startMut.mutate()}
+      disabled={startMut.isPending}
+    >
+      {startMut.isPending ? 'Starting…' : 'Start tour'}
+    </Btn>
+  );
+}
+
 export default function PublicTourDetailPage() {
   const { id } = useParams();
   const { token } = useAuth();
@@ -372,6 +402,10 @@ export default function PublicTourDetailPage() {
             <Btn variant="primary" onClick={() => addToCartMut.mutate()} disabled={addToCartMut.isLoading}>
               {addToCartMut.isLoading ? 'Adding…' : 'Add to cart'}
             </Btn>
+            
+          )}
+          {tour.isPurchased && (
+           <StartTourButton tourId={id} token={token} navigate={navigate} />
           )}
           {statusMessage && <span className="faint" style={{ fontSize: 13 }}>{statusMessage}</span>}
         </div>

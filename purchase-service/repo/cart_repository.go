@@ -1,7 +1,7 @@
 package repo
 
 import (
-	"purchase-service/model"
+	"example.com/purchase-service/model"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"

@@ -1,9 +1,10 @@
 package handler
 
 import (
-	"purchase-service/service"
 	"saga"
 	"saga/block_user"
+
+	"example.com/purchase-service/service"
 )
 
 type BlockUserCommandHandler struct {

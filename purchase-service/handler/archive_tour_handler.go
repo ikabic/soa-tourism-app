@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"purchase-service/service"
+	"example.com/purchase-service/service"
 	"saga"
 	"saga/archive_tour"
 )

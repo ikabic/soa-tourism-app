@@ -9,6 +9,8 @@ public class TourDbContext(DbContextOptions<TourDbContext> options) : DbContext(
     public DbSet<KeyPoint> KeyPoints => Set<KeyPoint>();
     public DbSet<TourDuration> TourDurations => Set<TourDuration>();
     public DbSet<Review> Reviews => Set<Review>();
+    public DbSet<TourExecution> TourExecutions => Set<TourExecution>();
+    public DbSet<CompletedKeyPoint> CompletedKeyPoints => Set<CompletedKeyPoint>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -49,5 +51,21 @@ public class TourDbContext(DbContextOptions<TourDbContext> options) : DbContext(
         modelBuilder.Entity<Review>()
             .Property(r => r.ImageBase64s)
             .HasColumnType("text[]");
+
+        modelBuilder.Entity<TourExecution>()
+            .Property(e => e.Status)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<TourExecution>()
+            .HasOne(e => e.Tour)
+            .WithMany()
+            .HasForeignKey(e => e.TourId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<CompletedKeyPoint>()
+            .HasOne(c => c.TourExecution)
+            .WithMany(e => e.CompletedKeyPoints)
+            .HasForeignKey(c => c.TourExecutionId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

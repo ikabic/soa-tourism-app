@@ -70,6 +70,8 @@ services:
         condition: service_healthy
       followers-app:
         condition: service_started
+    volumes:
+      - ./blog-service/uploads:/app/uploads
   tour-app:
     build:
       context: .
@@ -85,11 +87,13 @@ services:
       DB_NAME: ${TOUR_DB_NAME:-tourdb}
       JWT_SECRET: ${JWT_SECRET}
       PURCHASE_SERVICE_URL: http://purchase-app:8083
+      TOUR_SERVICE_GRPC_ADDR: tour-app:50051
       ASPNETCORE_URLS: http://+:8080
       NATS_HOST: ${NATS_HOST:-nats}
       NATS_PORT: ${NATS_PORT:-4222}
       NATS_USER: ${NATS_USER:-nats}
       NATS_PASSWORD: ${NATS_PASSWORD:-nats}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
     depends_on:
       tour-db:
         condition: service_healthy
@@ -138,6 +142,7 @@ services:
       NATS_PORT: ${NATS_PORT:-4222}
       NATS_USER: ${NATS_USER:-nats}
       NATS_PASSWORD: ${NATS_PASSWORD:-nats}
+      TOUR_SERVICE_GRPC_ADDR: tour-app:50051
     depends_on:
       purchase-db:
         condition: service_healthy
@@ -251,6 +256,17 @@ services:
     networks:
       - servers
     command: ["-m", "8222", "--user", "${NATS_USER:-nats}", "--pass", "${NATS_PASSWORD:-nats}"]
+    
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: jaeger
+    networks:
+      - servers
+    ports:
+      - "16686:16686"
+      - "4317:4317"
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
 
 volumes:
   stakeholders_pg_data:

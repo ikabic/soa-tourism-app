@@ -25,11 +25,17 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.9.0" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.9.0" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.9.0" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.GrpcNetClient" Version="1.10.0-beta.1" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.9.0" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Protobuf Include="Grpc\user.proto" GrpcServices="Client" />
-  </ItemGroup>
+<ItemGroup>
+  <Protobuf Include="Grpc\user.proto" GrpcServices="Client" />
+  <Protobuf Include="..\proto\tour\tour_service.proto" GrpcServices="Server" />
+</ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="NATS.Net" Version="2.*" />
