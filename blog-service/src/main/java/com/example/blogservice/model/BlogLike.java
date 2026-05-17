@@ -1,29 +1,28 @@
 package com.example.blogservice.model;
 
-import jakarta.persistence.*;
-import java.util.UUID;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 
-@Entity
-@Table(name = "blog_likes", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"blog_post_id", "user_id"})
-})
+@Document(collection = "blog_likes")
+@CompoundIndex(def = "{'blog_post_id': 1, 'user_id': 1}", unique = true)
 public class BlogLike {
 
     @Id
-    @GeneratedValue
-    private UUID id;
+    private String id;
 
-    @Column(name = "blog_post_id", nullable = false)
-    private UUID blogPostId;
+    @Field("blog_post_id")
+    private String blogPostId;
 
-    @Column(name = "user_id", nullable = false)
+    @Field("user_id")
     private String userId;
 
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
 
-    public UUID getBlogPostId() { return blogPostId; }
-    public void setBlogPostId(UUID blogPostId) { this.blogPostId = blogPostId; }
+    public String getBlogPostId() { return blogPostId; }
+    public void setBlogPostId(String blogPostId) { this.blogPostId = blogPostId; }
 
     public String getUserId() { return userId; }
     public void setUserId(String userId) { this.userId = userId; }

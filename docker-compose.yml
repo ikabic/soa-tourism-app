@@ -68,7 +68,7 @@ services:
       - servers
     environment:
       DB_HOST: blog-db
-      DB_PORT: 5432
+      DB_PORT: ${BLOG_DB_PORT:-27017}
       DB_USER: ${BLOG_DB_USER:-postgres}
       DB_PASSWORD: ${BLOG_DB_PASSWORD:-postgres}
       DB_NAME: ${BLOG_DB_NAME:-blog}
@@ -209,21 +209,19 @@ services:
 
   blog-db:
     container_name: blog-db
-    image: postgres:16-alpine
+    image: mongo:7.0.3
     restart: always
     networks:
       - servers
     environment:
-      POSTGRES_USER: ${BLOG_DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${BLOG_DB_PASSWORD:-postgres}
-      POSTGRES_DB: ${BLOG_DB_NAME:-blog}
+      MONGO_INITDB_DATABASE: ${BLOG_DB_NAME:-blog}
     ports:
-      - "5434:5432"
+      - "27018:27017"
     volumes:
-      - blog_pg_data:/var/lib/postgresql/data
-      - ./init/postgres/blogs:/docker-entrypoint-initdb.d
+      - blog_mongo_data:/data/db
+      - ./init/mongodb/blog:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${BLOG_DB_USER:-postgres}"]
+      test: ["CMD-SHELL", "mongosh --quiet --eval \"db.adminCommand({ ping: 1 })\" || exit 1"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -371,7 +369,7 @@ services:
 
 volumes:
   stakeholders_pg_data:
-  blog_pg_data:
+  blog_mongo_data:
   tour_pg_data:
   purchase_pg_data:
   followers_neo4j_data:

@@ -1,40 +1,38 @@
 package com.example.blogservice.model;
 
-import jakarta.persistence.*;
-import java.time.LocalDateTime;
-import java.util.UUID;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 
-@Entity
-@Table(name = "blog_posts")
+import java.time.LocalDateTime;
+
+@Document(collection = "blog_posts")
 public class BlogPost {
 
     @Id
-    @GeneratedValue
-    private UUID id;
+    private String id;
 
-    @Column(nullable = false)
     private String title;
 
-    @Column(nullable = false, columnDefinition = "text")
     private String description;
 
-    @Column(name = "image_urls", columnDefinition = "text")
+    @Field("image_urls")
     private String imageUrls;
 
-    @Column(name = "author_id", nullable = false)
+    @Field("author_id")
     private String authorId;
 
-    @Column(name = "created_at", nullable = false)
+    @Field("created_at")
     private LocalDateTime createdAt;
 
-    @Column(name = "likes_count", nullable = false)
+    @Field("likes_count")
     private Integer likesCount = 0;
 
-    public UUID getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(UUID id) {
+    public void setId(String id) {
         this.id = id;
     }
 

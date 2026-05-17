@@ -10,7 +10,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/blogs/{blogId}/comments")
@@ -24,7 +23,7 @@ public class CommentController {
 
     @PostMapping
     public ResponseEntity<CommentResponse> addComment(
-            @PathVariable("blogId") UUID blogId,
+            @PathVariable("blogId") String blogId,
             @Valid @RequestBody CommentRequest request,
             HttpServletRequest httpRequest) {
         String authorId = (String) httpRequest.getAttribute("userId");
@@ -36,7 +35,7 @@ public class CommentController {
     }
 
     @GetMapping
-    public ResponseEntity<List<CommentResponse>> getComments(@PathVariable("blogId") UUID blogId) {
+    public ResponseEntity<List<CommentResponse>> getComments(@PathVariable("blogId") String blogId) {
         return ResponseEntity.ok(commentService.getComments(blogId));
     }
 }

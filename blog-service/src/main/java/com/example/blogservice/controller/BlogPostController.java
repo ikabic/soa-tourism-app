@@ -30,7 +30,7 @@ public class BlogPostController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<BlogPost> getBlogById(@PathVariable UUID id) {
+    public ResponseEntity<BlogPost> getBlogById(@PathVariable String id) {
         Optional<BlogPost> blogPost = blogPostRepository.findById(id);
         return blogPost.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
@@ -46,6 +46,7 @@ public class BlogPostController {
         blogPost.setTitle(request.getTitle());
         blogPost.setDescription(request.getDescription());
         blogPost.setAuthorId(authorId);
+        blogPost.setId(UUID.randomUUID().toString());
         blogPost.setCreatedAt(LocalDateTime.now());
         blogPost.setLikesCount(0);
 

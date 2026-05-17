@@ -7,7 +7,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/blogs/{blogId}/like")
@@ -21,7 +20,7 @@ public class BlogLikeController {
 
     @PostMapping
     public ResponseEntity<Void> likePost(
-            @PathVariable("blogId") UUID blogId,
+            @PathVariable("blogId") String blogId,
             HttpServletRequest httpRequest) {
         String userId = (String) httpRequest.getAttribute("userId");
         if (userId == null || userId.isBlank()) {
@@ -33,7 +32,7 @@ public class BlogLikeController {
 
     @GetMapping
     public ResponseEntity<Map<String, Boolean>> getLikeStatus(
-            @PathVariable("blogId") UUID blogId,
+            @PathVariable("blogId") String blogId,
             HttpServletRequest httpRequest) {
         String userId = (String) httpRequest.getAttribute("userId");
         if (userId == null || userId.isBlank()) {
@@ -45,7 +44,7 @@ public class BlogLikeController {
 
     @DeleteMapping
     public ResponseEntity<Void> unlikePost(
-            @PathVariable("blogId") UUID blogId,
+            @PathVariable("blogId") String blogId,
             HttpServletRequest httpRequest) {
         String userId = (String) httpRequest.getAttribute("userId");
         if (userId == null || userId.isBlank()) {
