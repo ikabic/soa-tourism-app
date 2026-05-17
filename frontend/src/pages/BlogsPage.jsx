@@ -7,6 +7,7 @@ import { api as stakeholdersApi } from '../api/stakeholdersApi';
 import { Btn, ErrBanner, Icon, ICONS, ProfileUsername } from '../components';
 import { formatDate } from '../utils/helpers';
 import ReactMarkdown from 'react-markdown';
+import removeMarkdown from 'remove-markdown';
 
 export default function BlogsPage() {
   const { token } = useAuth();
@@ -310,7 +311,7 @@ export default function BlogsPage() {
 }
 
 function BlogCard({ blog, index, authorById }) {
-  const excerpt = blog.description?.split('\n')[0] || '';
+  const excerpt = removeMarkdown(blog.description?.split('\n')[0] || '');
   const imageUrls = blog.imageUrls ? blog.imageUrls.split(',').map((url) => url.trim()).filter(Boolean) : [];
 
   const authorName = authorById.get(blog.authorId) || blog.authorId;

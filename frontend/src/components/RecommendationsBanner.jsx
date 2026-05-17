@@ -101,7 +101,7 @@ function RecommendationCard({ profile, onFollow, isPending }) {
         overflow: 'hidden', flexShrink: 0, cursor: 'pointer'
       }}>
         {profile.avatar
-          ? <img src={`http://localhost:8080${profile.avatar}`} alt={profile.username}
+          ? <img src={profile?.avatar?.startsWith("http://") || profile?.avatar?.startsWith("https://") ? profile.avatar : `http://localhost:8080${profile.avatar}`} alt={profile.username}
               style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           : initials}
       </div>

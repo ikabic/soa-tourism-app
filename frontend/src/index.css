@@ -571,3 +571,13 @@ button:hover {
   flex-direction: column;
   overflow: hidden;
 }
+
+.blog-markdown pre {
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
+.blog-markdown code {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}

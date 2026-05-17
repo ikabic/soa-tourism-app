@@ -91,6 +91,7 @@ builder.Services.AddSingleton<IArchiveTourOrchestrator>(sp => sp.GetRequiredServ
 
 var app = builder.Build();
 
+/*
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<TourDbContext>();
@@ -141,6 +142,7 @@ using (var scope = app.Services.CreateScope())
        );
     ");
 }
+*/
 
 app.Services.GetRequiredService<ArchiveTourOrchestrator>().Start();
 

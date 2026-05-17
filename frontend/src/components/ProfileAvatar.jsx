@@ -20,9 +20,11 @@ export default function ProfileAvatar({ profile, isOwn, onFileSelected, isProfil
         e.target.value = '';
     }
 
+    const isAvatarUrl = profile?.avatar?.startsWith("http://") || profile?.avatar?.startsWith("https://")
+
     return <div className="profile-avatar-wrap" onClick={() => navigate(`/${profile.username}`)}>
         <div className={isProfilePage ? "profile-avatar extended" : "profile-avatar"} style={{ height: size, width: size, fontSize: fontSize }}>
-            {profile.avatar ? <img src={`http://localhost:8080${profile.avatar}`} alt={profile.username} /> : getInitials(profile.name, profile.last_name, profile.username)}
+            {profile.avatar ? <img src={isAvatarUrl ? profile.avatar : `http://localhost:8080${profile.avatar}`} alt={profile.username} /> : getInitials(profile.name, profile.last_name, profile.username)}
         </div>
         {isOwn && <>
             <button className="profile-avatar-edit-btn" onClick={() => fileInputRef.current?.click()} title="Change avatar">

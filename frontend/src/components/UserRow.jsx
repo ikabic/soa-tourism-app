@@ -6,9 +6,11 @@ import { useAuth } from "../context/AuthContext";
 export default function UserRow({ rowUser, isFollowing, onToggle, onNavigate }) {
   const { user } = useAuth();
 
+  const isAvatarUrl = rowUser?.avatar?.startsWith("http://") || rowUser?.avatar?.startsWith("https://")
+
   return <div className="profile-user-row">
     <button className="profile-user-avatar" onClick={onNavigate} style={{ cursor: 'pointer', background: 'none', border: 'none', padding: 0 }}>
-      {rowUser.avatar ? <img src={`http://localhost:8080${rowUser.avatar}`} alt={rowUser.username} /> : getInitials(rowUser.name, rowUser.last_name, rowUser.username)}
+      {rowUser.avatar ? <img src={isAvatarUrl? rowUser.avatar : `http://localhost:8080${rowUser.avatar}`} alt={rowUser.username} /> : getInitials(rowUser.name, rowUser.last_name, rowUser.username)}
     </button>
 
     <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={onNavigate}>

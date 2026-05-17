@@ -256,7 +256,7 @@ export default function BlogDetailPage() {
         </div>
       </div>
 
-      <div className="card fade-up text-break blog-markdown" style={{ padding: 22, marginBottom: 26 }}>
+      <div className="card fade-up text-break blog-markdown" style={{ padding: 22, marginBottom: 26, overflowWrap: 'break-word', wordBreak: 'break-word', whiteSpace: 'normal' }}>
         <ReactMarkdown>{blog.description}</ReactMarkdown>
       </div>
 

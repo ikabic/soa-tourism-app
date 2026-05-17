@@ -51,6 +51,7 @@ services:
       - "5433:5432"
     volumes:
       - stakeholders_pg_data:/var/lib/postgresql/data
+      - ./init/postgres/stakeholders:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${STAKEHOLDERS_DB_USER:-postgres}"]
       interval: 5s
@@ -129,6 +130,7 @@ services:
       - "5435:5432"
     volumes:
       - tour_pg_data:/var/lib/postgresql/data
+      - ./init/postgres/tours:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${TOUR_DB_USER:-postgres}"]
       interval: 5s
@@ -180,6 +182,7 @@ services:
       - "5436:5432"
     volumes:
       - purchase_pg_data:/var/lib/postgresql/data
+      - ./init/postgres/purchases:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${PURCHASE_DB_USER:-postgres}"]
       interval: 5s
@@ -218,6 +221,7 @@ services:
       - "5434:5432"
     volumes:
       - blog_pg_data:/var/lib/postgresql/data
+      - ./init/postgres/blogs:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${BLOG_DB_USER:-postgres}"]
       interval: 5s
@@ -262,6 +266,13 @@ services:
       - "7687:7687"
     volumes:
       - followers_neo4j_data:/data
+      - ./init/neo4j/followers:/docker-entrypoint-initdb.d
+    entrypoint: >
+      bash -c "
+        /startup/docker-entrypoint.sh neo4j &
+        /docker-entrypoint-initdb.d/init.sh &&
+        wait
+      "
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:7474"]
       interval: 10s
