@@ -22,10 +22,10 @@ services:
       DB_SSLMODE: disable
       JWT_SECRET: ${JWT_SECRET}
       FOLLOWERS_GRPC_ADDR: followers-app:50051
-      NATS_HOST: ${NATS_HOST:-host}
+      NATS_HOST: ${NATS_HOST:-nats}
       NATS_PORT: ${NATS_PORT:-4222}
-      NATS_USER: ${NATS_USER:-nats}
-      NATS_PASSWORD: ${NATS_PASSWORD:-nats}
+      NATS_USER: ${NATS_USER:-natscon}
+      NATS_PASSWORD: ${NATS_PASSWORD:-admin}
     depends_on:
       followers-app:
         condition: service_started
@@ -104,8 +104,8 @@ services:
       ASPNETCORE_URLS: http://+:8080
       NATS_HOST: ${NATS_HOST:-nats}
       NATS_PORT: ${NATS_PORT:-4222}
-      NATS_USER: ${NATS_USER:-nats}
-      NATS_PASSWORD: ${NATS_PASSWORD:-nats}
+      NATS_USER: ${NATS_USER:-natscon}
+      NATS_PASSWORD: ${NATS_PASSWORD:-admin}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
     depends_on:
       tour-db:
@@ -154,10 +154,10 @@ services:
       DB_SSLMODE: disable
       JWT_SECRET: ${JWT_SECRET}
       TOUR_SERVICE_URL: http://tour-app:8080
-      NATS_HOST: ${NATS_HOST:-host}
+      NATS_HOST: ${NATS_HOST:-nats}
       NATS_PORT: ${NATS_PORT:-4222}
-      NATS_USER: ${NATS_USER:-nats}
-      NATS_PASSWORD: ${NATS_PASSWORD:-nats}
+      NATS_USER: ${NATS_USER:-natscon}
+      NATS_PASSWORD: ${NATS_PASSWORD:-admin}
       TOUR_SERVICE_GRPC_ADDR: tour-app:50051
     depends_on:
       purchase-db:
@@ -242,10 +242,10 @@ services:
       NEO4J_PASSWORD: ${NEO4J_PASSWORD:-password123}
       JWT_SECRET: ${JWT_SECRET}
       GRPC_PORT: 50051
-      NATS_HOST: ${NATS_HOST:-host}
+      NATS_HOST: ${NATS_HOST:-nats}
       NATS_PORT: ${NATS_PORT:-4222}
-      NATS_USER: ${NATS_USER:-nats}
-      NATS_PASSWORD: ${NATS_PASSWORD:-nats}
+      NATS_USER: ${NATS_USER:-natscon}
+      NATS_PASSWORD: ${NATS_PASSWORD:-admin}
     depends_on:
       followers-db:
         condition: service_healthy
@@ -260,7 +260,7 @@ services:
     networks:
       - servers
     environment:
-      NEO4J_AUTH: ${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-password123}
+      NEO4J_AUTH: ${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-rootroot}
     ports:
       - "7474:7474"
       - "7687:7687"
@@ -339,7 +339,7 @@ services:
     restart: on-failure
     networks:
       - servers
-    command: ["-m", "8222", "--user", "${NATS_USER:-nats}", "--pass", "${NATS_PASSWORD:-nats}"]
+    command: ["-m", "8222", "--user", "${NATS_USER:-natscon}", "--pass", "${NATS_PASSWORD:-admin}"]
     
   jaeger:
     image: jaegertracing/all-in-one:latest
