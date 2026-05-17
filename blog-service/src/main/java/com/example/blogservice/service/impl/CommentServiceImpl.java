@@ -32,9 +32,9 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
-    public CommentResponse addComment(UUID blogPostId, String authorId, CommentRequest request) {
+    public CommentResponse addComment(String blogPostId, String authorId, CommentRequest request) {
     	var blog = blogPostRepository.findById(blogPostId)
-                .orElseThrow(() -> new BlogNotFoundException(blogPostId.toString()));
+                .orElseThrow(() -> new BlogNotFoundException(blogPostId));
 
         String blogAuthorId = blog.getAuthorId();
 
@@ -47,6 +47,7 @@ public class CommentServiceImpl implements CommentService {
 
         LocalDateTime now = LocalDateTime.now();
         Comment comment = new Comment();
+        comment.setId(UUID.randomUUID().toString());
         comment.setBlogPostId(blogPostId);
         comment.setAuthorId(authorId);
         comment.setContent(request.getContent());
@@ -57,9 +58,9 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
-    public List<CommentResponse> getComments(UUID blogPostId) {
+    public List<CommentResponse> getComments(String blogPostId) {
         if (!blogPostRepository.existsById(blogPostId)) {
-            throw new BlogNotFoundException(blogPostId.toString());
+            throw new BlogNotFoundException(blogPostId);
         }
         return commentRepository.findByBlogPostId(blogPostId).stream()
                 .map(this::toResponse)

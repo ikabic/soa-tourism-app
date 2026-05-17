@@ -26,15 +26,16 @@ public class BlogLikeServiceImpl implements BlogLikeService {
 
     @Override
     @Transactional
-    public void likePost(UUID blogPostId, String userId) {
+    public void likePost(String blogPostId, String userId) {
         BlogPost blogPost = blogPostRepository.findById(blogPostId)
-                .orElseThrow(() -> new BlogNotFoundException(blogPostId.toString()));
+                .orElseThrow(() -> new BlogNotFoundException(blogPostId));
 
         if (blogLikeRepository.existsByBlogPostIdAndUserId(blogPostId, userId)) {
             throw new AlreadyLikedException();
         }
 
         BlogLike like = new BlogLike();
+        like.setId(UUID.randomUUID().toString());
         like.setBlogPostId(blogPostId);
         like.setUserId(userId);
         blogLikeRepository.save(like);
@@ -45,9 +46,9 @@ public class BlogLikeServiceImpl implements BlogLikeService {
 
     @Override
     @Transactional
-    public void unlikePost(UUID blogPostId, String userId) {
+    public void unlikePost(String blogPostId, String userId) {
         BlogPost blogPost = blogPostRepository.findById(blogPostId)
-                .orElseThrow(() -> new BlogNotFoundException(blogPostId.toString()));
+                .orElseThrow(() -> new BlogNotFoundException(blogPostId));
 
         BlogLike like = blogLikeRepository.findByBlogPostIdAndUserId(blogPostId, userId)
                 .orElseThrow(NotLikedException::new);
@@ -59,7 +60,7 @@ public class BlogLikeServiceImpl implements BlogLikeService {
     }
 
     @Override
-    public boolean hasLiked(UUID blogPostId, String userId) {
+    public boolean hasLiked(String blogPostId, String userId) {
         return blogLikeRepository.existsByBlogPostIdAndUserId(blogPostId, userId);
     }
 }

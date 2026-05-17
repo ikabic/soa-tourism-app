@@ -1,37 +1,36 @@
 package com.example.blogservice.model;
 
-import jakarta.persistence.*;
-import java.time.LocalDateTime;
-import java.util.UUID;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 
-@Entity
-@Table(name = "comments")
+import java.time.LocalDateTime;
+
+@Document(collection = "comments")
 public class Comment {
 
     @Id
-    @GeneratedValue
-    private UUID id;
+    private String id;
 
-    @Column(name = "blog_post_id", nullable = false)
-    private UUID blogPostId;
+    @Field("blog_post_id")
+    private String blogPostId;
 
-    @Column(name = "author_id", nullable = false)
+    @Field("author_id")
     private String authorId;
 
-    @Column(nullable = false, columnDefinition = "text")
     private String content;
 
-    @Column(name = "created_at", nullable = false)
+    @Field("created_at")
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at", nullable = false)
+    @Field("updated_at")
     private LocalDateTime updatedAt;
 
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
 
-    public UUID getBlogPostId() { return blogPostId; }
-    public void setBlogPostId(UUID blogPostId) { this.blogPostId = blogPostId; }
+    public String getBlogPostId() { return blogPostId; }
+    public void setBlogPostId(String blogPostId) { this.blogPostId = blogPostId; }
 
     public String getAuthorId() { return authorId; }
     public void setAuthorId(String authorId) { this.authorId = authorId; }
